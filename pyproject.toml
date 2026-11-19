@@ -30,6 +30,9 @@ packages = ["src/bigfatfish"]
 [tool.pytest.ini_options]
 addopts = ["--disable-socket"]
 testpaths = ["tests"]
+markers = [
+    "replay: replay recorded GestureEvent fixtures against golden traces",
+]
 
 [tool.ruff]
 target-version = "py311"
