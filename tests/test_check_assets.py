@@ -88,6 +88,37 @@ def test_check_assets_rejects_force_tracked_local(tmp_path: Path) -> None:
     assert "assets/local/x.png" in combined
 
 
+def test_check_assets_rejects_uppercase_extension(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    image = repo / "assets" / "placeholder" / "X.PNG"
+    image.parent.mkdir(parents=True)
+    image.write_bytes(_png())
+    (repo / "ASSETS.md").write_text(_registry([]), encoding="utf-8")
+    _git(repo, "add", "ASSETS.md", "assets/placeholder/X.PNG")
+    _git(repo, "commit", "-m", "add an uppercase png")
+
+    result = _run(repo)
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0
+    assert "X.PNG" in combined
+    assert "未在 ASSETS.md 登记" in combined
+
+
+def test_check_assets_rejects_when_ls_files_fails(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    (repo / "README").write_text("ok\n", encoding="utf-8")
+    _git(repo, "add", "README")
+    _git(repo, "commit", "-m", "init")
+    bad_index = repo / "bad-index"
+    bad_index.write_bytes(b"not-an-index")
+
+    result = _run(repo, extra_env={"GIT_INDEX_FILE": str(bad_index)})
+    assert result.returncode != 0
+    assert "index file" in result.stderr
+
+
 def test_check_assets_accepts_registered_assets(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _init_repo(repo)
@@ -158,10 +189,15 @@ def test_repo_gitignore_covers_assets_local() -> None:
     assert result.stdout.strip() == "assets/local/x.png"
 
 
-def _run(repo: Path) -> subprocess.CompletedProcess[str]:
+def _run(
+    repo: Path,
+    extra_env: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
     env.pop("PYTHONUTF8", None)
     env.pop("PYTHONIOENCODING", None)
+    if extra_env is not None:
+        env.update(extra_env)
     return subprocess.run(
         [sys.executable, str(_SCRIPT)],
         cwd=repo,
