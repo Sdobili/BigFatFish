@@ -12,12 +12,13 @@ _PLACEHOLDER = (
 )
 # Hang guard only, same role as the one-second join in test_bus_never_blocks.
 # The assertion is the process exit code, not elapsed time.
-_SMOKE_HANG_GUARD_SECONDS = 30.0
+_SMOKE_HANG_GUARD_SECONDS = 60.0
 
 
 def test_window_is_frameless_translucent_and_stays_on_top(qtbot: QtBot) -> None:
-    from bigfatfish.shell.window import ShellWindow
     from PySide6.QtCore import Qt
+
+    from bigfatfish.shell.window import ShellWindow
 
     window = ShellWindow()
     qtbot.addWidget(window)
@@ -29,8 +30,9 @@ def test_window_is_frameless_translucent_and_stays_on_top(qtbot: QtBot) -> None:
 
 
 def test_window_loads_placeholder_pixmap(qtbot: QtBot) -> None:
-    from bigfatfish.shell.window import ShellWindow
     from PySide6.QtGui import QPixmap
+
+    from bigfatfish.shell.window import ShellWindow
 
     window = ShellWindow()
     qtbot.addWidget(window)

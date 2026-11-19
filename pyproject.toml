@@ -28,8 +28,7 @@ build-backend = "hatchling.build"
 packages = ["src/bigfatfish"]
 
 [tool.pytest.ini_options]
-# pytest-qt imports PySide6 during startup. This PR's tests must not import it.
-addopts = ["--disable-socket", "-p", "no:pytest-qt"]
+addopts = ["--disable-socket"]
 testpaths = ["tests"]
 
 [tool.ruff]
@@ -47,6 +46,7 @@ name = "Layered architecture"
 type = "layers"
 containers = ["bigfatfish"]
 layers = [
+    "__main__",
     "shell | replay",
     "agent | reflex | perception",
     "core",
