@@ -51,11 +51,12 @@ def test_smoke_exits_zero() -> None:
         [sys.executable, "-m", "bigfatfish", "--smoke"],
         env=env,
         stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        stderr=subprocess.PIPE,
     )
     try:
-        output, _ = proc.communicate(timeout=_SMOKE_HANG_GUARD_SECONDS)
+        stdout, stderr = proc.communicate(timeout=_SMOKE_HANG_GUARD_SECONDS)
     except subprocess.TimeoutExpired:
         proc.kill()
-        output, _ = proc.communicate()
-    assert proc.returncode == 0, output
+        stdout, stderr = proc.communicate()
+    assert proc.returncode == 0, stderr
+    assert b"SMOKE OK" in stdout, stdout
