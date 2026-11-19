@@ -29,7 +29,7 @@ def main() -> int:
     painter.setBrush(QColor(24, 32, 48, 255))
     painter.drawEllipse(QPointF(172, 124), 6, 6)
     painter.end()
-    if not image.save(str(out), "PNG"):
+    if not image.save(str(out), b"PNG"):
         print(f"failed to write {out}", file=sys.stderr)
         return 1
     return 0
