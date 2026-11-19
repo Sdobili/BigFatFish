@@ -46,9 +46,20 @@ def main() -> int:
         elif source not in _SOURCES:
             violations.append(f"{path}: 来源必须是「自制」或「程序生成」")
     if violations:
-        print("\n".join(violations))
+        _write_utf8("\n".join(violations))
         return 1
     return 0
+
+
+def _write_utf8(text: str) -> None:
+    """Write UTF-8 bytes so a cp1252 Windows console does not raise."""
+    payload = (text + "\n").encode("utf-8")
+    raw = getattr(sys.stdout, "buffer", None)
+    if raw is None:
+        sys.stdout.write(text + "\n")
+        return
+    raw.write(payload)
+    raw.flush()
 
 
 def _repo_root() -> Path:

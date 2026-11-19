@@ -141,8 +141,8 @@ def test_repo_gitignore_covers_assets_local() -> None:
 
 def _run(repo: Path) -> subprocess.CompletedProcess[str]:
     env = os.environ.copy()
-    env["PYTHONUTF8"] = "1"
-    env["PYTHONIOENCODING"] = "utf-8"
+    env.pop("PYTHONUTF8", None)
+    env.pop("PYTHONIOENCODING", None)
     return subprocess.run(
         [sys.executable, str(_SCRIPT)],
         cwd=repo,
