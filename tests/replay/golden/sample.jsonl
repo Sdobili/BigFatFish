@@ -1,0 +1,4 @@
+{"t": 0.0, "reflex": {"gaze_hand": "right", "nodding": false, "nods": 0, "follow": [0.62, 0.41]}, "status": "look"}
+{"t": 0.5, "reflex": {"gaze_hand": "right", "nodding": true, "nods": 1, "follow": [0.7, 0.3]}, "status": "greet"}
+{"t": 1.25, "reflex": {"gaze_hand": "left", "nodding": false, "nods": 1, "follow": [0.2, 0.8]}, "status": "look"}
+{"t": 2.0, "reflex": {"gaze_hand": "left", "nodding": false, "nods": 1, "follow": null}, "status": "idle"}

@@ -1,0 +1,4 @@
+{"schema": "v1", "type": "gesture", "t": 0.0, "kind": "Open_Palm", "hand": "right", "landmarks": [[0.62, 0.41]]}
+{"schema": "v1", "type": "gesture", "t": 0.5, "kind": "Thumb_Up", "hand": "right", "landmarks": [[0.7, 0.3]]}
+{"schema": "v1", "type": "gesture", "t": 1.25, "kind": "Pointing_Up", "hand": "left", "landmarks": [[0.2, 0.8, 0.0]]}
+{"schema": "v1", "type": "gesture", "t": 2.0, "kind": "Closed_Fist", "hand": "left", "landmarks": null}
