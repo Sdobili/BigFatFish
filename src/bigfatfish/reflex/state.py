@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from bigfatfish.core.events import GestureEvent
 
-_NOD_KINDS = frozenset({"Closed_Fist", "Thumb_Up"})
+_NOD_KINDS = frozenset({"Thumb_Up"})
 
 
 @dataclass(frozen=True, slots=True)
