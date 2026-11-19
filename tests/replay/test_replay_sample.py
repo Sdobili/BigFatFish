@@ -30,9 +30,8 @@ time.monotonic_ns = _boom
 
 
 def test_replay_sample(tmp_path: Path) -> None:
-    from bigfatfish.replay.format import write_jsonl
-
     from bigfatfish.core.events import GestureEvent, load_event
+    from bigfatfish.replay.format import write_jsonl
 
     events = [
         load_event(json.loads(line))
