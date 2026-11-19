@@ -2,17 +2,9 @@
 
 import json
 
-from bigfatfish.agent.machine import (
-    AgentState,
-    initial as initial_agent,
-    step as step_agent,
-)
+from bigfatfish.agent import machine as agent_machine
 from bigfatfish.core.events import GestureEvent, Intent
-from bigfatfish.reflex.state import (
-    ReflexState,
-    initial as initial_reflex,
-    step as step_reflex,
-)
+from bigfatfish.reflex import state as reflex_state
 
 _INTENTS = {
     "Closed_Fist": "rest",
@@ -26,12 +18,12 @@ _INTENTS = {
 
 
 def render_trace(events: list[GestureEvent]) -> list[str]:
-    reflex: ReflexState = initial_reflex()
-    agent: AgentState = initial_agent()
+    reflex: reflex_state.ReflexState = reflex_state.initial()
+    agent: agent_machine.AgentState = agent_machine.initial()
     lines: list[str] = []
     for event in events:
-        reflex = step_reflex(reflex, event)
-        agent, status = step_agent(agent, _intent(event))
+        reflex = reflex_state.step(reflex, event)
+        agent, status = agent_machine.step(agent, _intent(event))
         payload: dict[str, object] = {
             "t": event.t,
             "reflex": reflex.to_dict(),
