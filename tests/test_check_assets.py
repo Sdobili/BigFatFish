@@ -148,6 +148,7 @@ def test_check_assets_accepts_registered_assets(tmp_path: Path) -> None:
 
     result = _run(repo)
     assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.splitlines() == ["OK"]
 
 
 def test_check_assets_ignores_untracked_gitignored_local(tmp_path: Path) -> None:
@@ -173,6 +174,7 @@ def test_check_assets_ignores_untracked_gitignored_local(tmp_path: Path) -> None
 
     result = _run(repo)
     assert result.returncode == 0, result.stdout + result.stderr
+    assert result.stdout.splitlines() == ["OK"]
 
 
 def test_repo_gitignore_covers_assets_local() -> None:
