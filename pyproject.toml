@@ -1,0 +1,40 @@
+[project]
+name = "bigfatfish"
+version = "0.0.1"
+description = "大肥鱼 desktop pet"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "PySide6",
+    "opencv-python",
+    "mediapipe",
+]
+
+[dependency-groups]
+dev = [
+    "import-linter",
+    "mypy",
+    "pytest",
+    "pytest-qt",
+    "pytest-socket",
+    "ruff",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bigfatfish"]
+
+[tool.pytest.ini_options]
+# pytest-qt imports PySide6 during startup. This PR's tests must not import it.
+addopts = ["--disable-socket", "-p", "no:pytest-qt"]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
