@@ -48,6 +48,7 @@ def main() -> int:
     if violations:
         _write_utf8("\n".join(violations))
         return 1
+    _write_utf8("OK")
     return 0
 
 
