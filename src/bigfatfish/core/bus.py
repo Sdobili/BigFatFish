@@ -10,6 +10,8 @@ class Channel(Generic[T]):
     """Drop a new event when the queue is full and return False."""
 
     def __init__(self, maxsize: int) -> None:
+        if maxsize < 1:
+            raise ValueError("maxsize must be at least 1")
         self._items: queue.Queue[T] = queue.Queue(maxsize=maxsize)
 
     def put_nowait(self, ev: T) -> bool:

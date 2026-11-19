@@ -3,6 +3,8 @@
 import json
 import threading
 
+import pytest
+
 
 def test_bus_never_blocks() -> None:
     from bigfatfish.core.bus import Channel
@@ -15,12 +17,20 @@ def test_bus_never_blocks() -> None:
     def put_when_full() -> None:
         result.append(channel.put_nowait("dropped"))
 
-    worker = threading.Thread(target=put_when_full)
+    worker = threading.Thread(target=put_when_full, daemon=True)
     worker.start()
     worker.join(timeout=1.0)
 
     assert not worker.is_alive()
     assert result == [False]
+
+
+def test_channel_rejects_non_positive_maxsize() -> None:
+    from bigfatfish.core.bus import Channel
+
+    for maxsize in (0, -1):
+        with pytest.raises(ValueError):
+            Channel(maxsize=maxsize)
 
 
 def test_event_roundtrip() -> None:

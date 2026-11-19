@@ -47,8 +47,8 @@ name = "Layered architecture"
 type = "layers"
 containers = ["bigfatfish"]
 layers = [
-    "shell",
-    "agent | reflex | perception | replay",
+    "shell | replay",
+    "agent | reflex | perception",
     "core",
 ]
 exhaustive = true
