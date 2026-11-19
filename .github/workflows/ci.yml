@@ -31,6 +31,8 @@ jobs:
         run: uv run ruff check .
       - name: Ruff format check
         run: uv run ruff format --check .
+      - name: lint-imports
+        run: uv run lint-imports
 
   type:
     name: type (${{ matrix.os }})

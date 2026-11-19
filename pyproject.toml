@@ -38,3 +38,17 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
+
+[tool.importlinter]
+root_packages = ["bigfatfish"]
+
+[[tool.importlinter.contracts]]
+name = "Layered architecture"
+type = "layers"
+containers = ["bigfatfish"]
+layers = [
+    "shell",
+    "agent | reflex | perception | replay",
+    "core",
+]
+exhaustive = true
