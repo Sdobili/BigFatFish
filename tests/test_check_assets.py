@@ -11,6 +11,25 @@ _SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "check_assets.py"
 _ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_check_assets_rejects_other_source(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    image = repo / "assets" / "placeholder" / "other.png"
+    image.parent.mkdir(parents=True)
+    image.write_bytes(_png())
+    (repo / "ASSETS.md").write_text(
+        _registry([("assets/placeholder/other.png", "他人", "not ours")]),
+        encoding="utf-8",
+    )
+    _git(repo, "add", "ASSETS.md", "assets/placeholder/other.png")
+    _git(repo, "commit", "-m", "register a third-party source")
+
+    result = _run(repo)
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0
+    assert "来源必须是" in combined
+
+
 def test_check_assets_rejects_unregistered_image(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _init_repo(repo)
