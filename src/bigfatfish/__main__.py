@@ -3,6 +3,7 @@
 import argparse
 import sys
 
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
 
@@ -31,11 +32,16 @@ def main(argv: list[str] | None = None) -> int:
 
 def _render_one_frame(frame_out: str | None) -> int:
     app = QApplication([])
+    # Offscreen grab() keeps the placeholder on Linux and loses it on Windows.
+    # Paint into a cleared premultiplied image instead, with one portable style.
+    app.setStyle("Fusion")
     window = ShellWindow()
     window.show()
     app.processEvents()
     if frame_out is not None:
-        image = window.grab().toImage()
+        image = QImage(window.size(), QImage.Format.Format_ARGB32_Premultiplied)
+        image.fill(Qt.GlobalColor.transparent)
+        window.render(image)
         if not image.save(frame_out):
             print(f"failed to write {frame_out}", file=sys.stderr)
             return 1
