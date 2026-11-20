@@ -560,10 +560,11 @@ def test_baseline_uses_baseline_guard(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # A cold pytest child, with bytecode writes off and a fresh cache prefix,
-    # takes longer than 1s (about 2s here; Windows CI is slower). A 1s hang
-    # guard would time out the patched run too, so it cannot show that the
-    # baseline used its own limit. 20s is above that startup and below the
-    # 30s unpatched sleep.
+    # takes longer than 1s (Windows CI reported about 0.8s inside pytest, and
+    # the process is slower than that). A 1s hang guard would time out the
+    # patched run too. 8s is above that startup and below the 10s sleep.
+    # The first red run used 20s/30s and the Windows job then hit its 10 minute
+    # limit during the gate.
     monkeypatch.setenv("PYTEST_DISABLE_PLUGIN_AUTOLOAD", "1")
     _project(
         tmp_path,
@@ -573,7 +574,7 @@ def test_baseline_uses_baseline_guard(
 
 
             def value() -> int:
-                time.sleep(30)
+                time.sleep(10)
                 return 1
             """
         ),
@@ -588,13 +589,13 @@ def test_baseline_uses_baseline_guard(
         ),
         _mutant(
             mutant_id="slow-baseline",
-            original="time.sleep(30)\n    return 1",
+            original="time.sleep(10)\n    return 1",
             replacement="return 0",
             kill="tests/test_sample.py::test_value",
             expect="assert 0 == 1",
         ),
     )
-    result = _run(tmp_path, "--hang-guard", "20", "--baseline-guard", "60")
+    result = _run(tmp_path, "--hang-guard", "8", "--baseline-guard", "60")
     assert result.returncode == 0
     assert "KILLED" in result.stdout
 
@@ -608,7 +609,7 @@ def test_baseline_hang_exits_2(tmp_path: Path) -> None:
 
 
             def value() -> int:
-                time.sleep(20)
+                time.sleep(5)
                 return 1
             """
         ),
@@ -623,7 +624,7 @@ def test_baseline_hang_exits_2(tmp_path: Path) -> None:
         ),
         _mutant(
             mutant_id="hangs-baseline",
-            original="time.sleep(20)",
+            original="time.sleep(5)",
             replacement="return 0",
             kill="tests/test_sample.py::test_value",
             expect="assert 0 == 1",

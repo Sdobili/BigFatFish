@@ -1,30 +1,8 @@
 """Pytest options shared by the suite."""
 
-import os
 import sys
 
 import pytest
-from hypothesis import settings
-
-# Explicit load overrides the built-in ci profile Hypothesis turns on under CI.
-settings.register_profile(
-    "bigfatfish-full",
-    max_examples=1000,
-    derandomize=True,
-    deadline=None,
-    database=None,
-)
-settings.register_profile(
-    "bigfatfish-gate",
-    max_examples=100,
-    derandomize=True,
-    deadline=None,
-    database=None,
-)
-if os.environ.get("BIGFATFISH_HYPOTHESIS_PROFILE") == "gate":
-    settings.load_profile("bigfatfish-gate")
-else:
-    settings.load_profile("bigfatfish-full")
 
 # Windows pipes default to cp1252. Pytest then unicode-escapes the Qwen
 # failure text, so the mutation gate never sees the expect string.

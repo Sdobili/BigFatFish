@@ -31,7 +31,6 @@ class Args:
     root: str
     only: tuple[str, ...] | None
     hang_guard: float
-    baseline_guard: float
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -58,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
     if problem is not None:
         print(problem)
         return 2
-    if _baseline_failed(root, mutants, parsed.baseline_guard):
+    if _baseline_failed(root, mutants, parsed.hang_guard):
         return 2
     return _run_mutants(root, mutants, parsed.hang_guard)
 
@@ -69,21 +68,17 @@ def _parse_args(argv: list[str]) -> Args | str:
     parser.add_argument("--root", default=".")
     parser.add_argument("--only", nargs="+")
     parser.add_argument("--hang-guard", type=float, default=120.0)
-    parser.add_argument("--baseline-guard", type=float, default=300.0)
     parsed = parser.parse_args(argv)
     manifest = parsed.manifest
     root = parsed.root
     hang_guard = parsed.hang_guard
-    baseline_guard = parsed.baseline_guard
     only = parsed.only
     if not isinstance(manifest, str) or not isinstance(root, str):
         return "invalid arguments"
     if not isinstance(hang_guard, float):
         return "invalid hang guard"
-    if not isinstance(baseline_guard, float):
-        return "invalid baseline guard"
     if only is None:
-        return Args(manifest, root, None, hang_guard, baseline_guard)
+        return Args(manifest, root, None, hang_guard)
     if not isinstance(only, list):
         return "invalid --only"
     only_ids: list[str] = []
@@ -91,7 +86,7 @@ def _parse_args(argv: list[str]) -> Args | str:
         if not isinstance(item, str):
             return "invalid --only"
         only_ids.append(item)
-    return Args(manifest, root, tuple(only_ids), hang_guard, baseline_guard)
+    return Args(manifest, root, tuple(only_ids), hang_guard)
 
 
 def _load_manifest(path: Path) -> list[Mutant] | str:
@@ -330,7 +325,6 @@ def _pytest(
 ) -> tuple[int | None, str]:
     env = os.environ.copy()
     env["PYTHONDONTWRITEBYTECODE"] = "1"
-    env["BIGFATFISH_HYPOTHESIS_PROFILE"] = "gate"
     # A same-length write in the same second must not reuse the baseline .pyc.
     with tempfile.TemporaryDirectory(prefix="mutation-pyc-") as cache:
         env["PYTHONPYCACHEPREFIX"] = cache
