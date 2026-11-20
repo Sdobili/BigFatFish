@@ -93,6 +93,22 @@ def test_smoke_frame_matches_placeholder(tmp_path: Path, qapp: object) -> None:
     grabbed = QImage(str(frame))
     expected = QImage(str(_PLACEHOLDER))
     assert grabbed.size() == expected.size()
-    assert grabbed.convertToFormat(
-        QImage.Format.Format_ARGB32
-    ) == expected.convertToFormat(QImage.Format.Format_ARGB32), _FRAME_DIFFERS
+    left = grabbed.convertToFormat(QImage.Format.Format_ARGB32)
+    right = expected.convertToFormat(QImage.Format.Format_ARGB32)
+    if left != right:
+        diffs = 0
+        sample = ""
+        for y in range(left.height()):
+            for x in range(left.width()):
+                if left.pixel(x, y) != right.pixel(x, y):
+                    diffs += 1
+                    if sample == "":
+                        sample = (
+                            f"{x},{y}:{left.pixel(x, y):08x}/{right.pixel(x, y):08x}"
+                        )
+        print(
+            f"frame diff count={diffs} sample={sample} "
+            f"grabbed={grabbed.format()} expected={expected.format()}",
+            file=sys.stderr,
+        )
+    assert left == right, _FRAME_DIFFERS
