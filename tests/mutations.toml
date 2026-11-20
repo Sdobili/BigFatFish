@@ -73,6 +73,10 @@ required_ids = [
     "r1-undo-window",
     "r1-token-unchecked",
     "r1-token-public",
+    "r1-token-copyable",
+    "r1-token-forgeable",
+    "r1-token-unbound",
+    "r1-token-reusable",
 ]
 
 guard_tests = [
@@ -777,8 +781,44 @@ why = "add writes even when the token is not a confirmation"
 [[mutant]]
 id = "r1-token-public"
 file = "src/bigfatfish/agent/loop.py"
-original = "if sys._getframe(1).f_globals.get(\"__name__\") != __name__:"
+original = "if caller != __name__:"
 replacement = "if False:"
 kill = ["tests/agent/test_confirmation.py::test_token_cannot_be_constructed"]
 expect = "DID NOT RAISE"
 why = "ConfirmationToken can be constructed outside the loop"
+
+[[mutant]]
+id = "r1-token-copyable"
+file = "src/bigfatfish/agent/loop.py"
+original = "raise TypeError(\"ConfirmationToken cannot be copied\")"
+replacement = "return"
+kill = ["tests/agent/test_confirmation.py::test_token_cannot_be_copied"]
+expect = "DID NOT RAISE"
+why = "copy, deepcopy, and pickle no longer refuse the token"
+
+[[mutant]]
+id = "r1-token-forgeable"
+file = "src/bigfatfish/agent/store.py"
+original = "getattr(token, \"_minted\", None) is not True"
+replacement = "False"
+kill = ["tests/agent/test_confirmation.py::test_forged_token_rejected"]
+expect = "forged token accepted"
+why = "add keeps only the isinstance check and accepts an unminted token"
+
+[[mutant]]
+id = "r1-token-unbound"
+file = "src/bigfatfish/agent/store.py"
+original = "getattr(token, \"_capture_id\", draft.capture_id) != draft.capture_id"
+replacement = "False"
+kill = ["tests/agent/test_confirmation.py::test_token_bound_to_capture"]
+expect = "token for another capture accepted"
+why = "add does not compare the token capture with the draft"
+
+[[mutant]]
+id = "r1-token-reusable"
+file = "src/bigfatfish/agent/store.py"
+original = "self._spent.add(id(token))"
+replacement = "pass"
+kill = ["tests/agent/test_confirmation.py::test_token_single_use"]
+expect = "token reused"
+why = "add does not record a spent token, so the same token can deliver again"
