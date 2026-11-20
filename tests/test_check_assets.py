@@ -367,6 +367,26 @@ def test_sniff_signatures(head: bytes, expected: str | None) -> None:
     assert _sniff(head) == expected
 
 
+def test_check_assets_output_survives_cp1252(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    image = repo / "assets" / "placeholder" / "extra.png"
+    image.parent.mkdir(parents=True)
+    image.write_bytes(_png())
+    (repo / "ASSETS.md").write_text(_registry([]), encoding="utf-8")
+    _git(repo, "add", "ASSETS.md", "assets/placeholder/extra.png")
+    _git(repo, "commit", "-m", "add unregistered image")
+
+    result = _run(
+        repo,
+        extra_env={"PYTHONIOENCODING": "cp1252", "PYTHONUTF8": "0"},
+    )
+    assert result.returncode == 1
+    assert "未在 ASSETS.md 登记" in result.stdout
+    assert "Traceback" not in result.stderr
+    assert "UnicodeEncodeError" not in result.stderr
+
+
 def test_repo_gitignore_covers_assets_local() -> None:
     gitignore = (_ROOT / ".gitignore").read_text(encoding="utf-8")
     assert "assets/local/" in gitignore.splitlines()
