@@ -74,7 +74,7 @@ def main() -> int:
         elif source not in _SOURCES:
             violations.append(f"{path}: 来源必须是「自制」或「程序生成」")
     if violations:
-        sys.stdout.write("\n".join(violations) + "\n")
+        _write_utf8("\n".join(violations))
         return 1
     _write_utf8("OK")
     return 0

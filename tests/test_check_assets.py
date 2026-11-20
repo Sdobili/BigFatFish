@@ -387,6 +387,41 @@ def test_check_assets_output_survives_cp1252(tmp_path: Path) -> None:
     assert "UnicodeEncodeError" not in result.stderr
 
 
+_OTHER_BMP_DIB_LENGTHS = (12, 52, 56, 64, 108, 124)
+
+
+@pytest.mark.parametrize("dib_size", _OTHER_BMP_DIB_LENGTHS)
+def test_sniff_bmp_accepts_other_dib_header_lengths(dib_size: int) -> None:
+    head = b"BM" + b"\x00" * 12 + struct.pack("<I", dib_size)
+    assert _sniff(head) == "BMP"
+
+
+def test_sniff_kra_returns_none_for_inexact_mimetype() -> None:
+    head = b"PK\x03\x04" + b"\x00" * 26 + b"mimetypeXapplication/x-krita"
+    assert _sniff(head) is None
+
+
+def test_check_assets_checks_deleted_tracked_file(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    image = repo / "assets" / "placeholder" / "extra.png"
+    image.parent.mkdir(parents=True)
+    image.write_bytes(_png())
+    (repo / "ASSETS.md").write_text(_registry([]), encoding="utf-8")
+    _git(repo, "add", "ASSETS.md", "assets/placeholder/extra.png")
+    _git(repo, "commit", "-m", "add unregistered image")
+    image.unlink()
+    tracked = _git(repo, "ls-files", "--", "assets/placeholder/extra.png")
+    assert tracked.stdout.strip() == "assets/placeholder/extra.png"
+
+    result = _run(repo)
+    combined = result.stdout + result.stderr
+    assert "Traceback" not in result.stderr
+    assert "assets/placeholder/extra.png: 未在 ASSETS.md 登记" in combined
+    assert result.returncode != 0
+    assert "OK" not in result.stdout.splitlines()
+
+
 def test_repo_gitignore_covers_assets_local() -> None:
     gitignore = (_ROOT / ".gitignore").read_text(encoding="utf-8")
     assert "assets/local/" in gitignore.splitlines()

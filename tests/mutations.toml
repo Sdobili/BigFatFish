@@ -8,6 +8,7 @@ required_ids = [
     "hard-ok-on-violation",
     "hard-dup-off",
     "hard-missing-off",
+    "hard-utf8-off",
 ]
 
 [[mutant]]
@@ -90,3 +91,12 @@ replacement = "if False:"
 kill = ["tests/test_check_assets.py::test_check_assets_rejects_registered_but_missing"]
 expect = "assert 'assets/own/gone.png: "
 why = "登记了但未被 git 跟踪的路径不再被当成违规"
+
+[[mutant]]
+id = "hard-utf8-off"
+file = "scripts/check_assets.py"
+original = "_write_utf8(\"\\n\".join(violations))"
+replacement = "sys.stdout.write(\"\\n\".join(violations) + \"\\n\")"
+kill = ["tests/test_check_assets.py::test_check_assets_output_survives_cp1252"]
+expect = "UnicodeEncodeError:"
+why = "cp1252 下改回 sys.stdout.write 会抛 UnicodeEncodeError，违规信息出不来"
