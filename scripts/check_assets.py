@@ -46,7 +46,7 @@ def main() -> int:
         elif source not in _SOURCES:
             violations.append(f"{path}: 来源必须是「自制」或「程序生成」")
     if violations:
-        _write_utf8("\n".join(violations))
+        _write_utf8("\n".join(violations) + "\nOK")
         return 1
     _write_utf8("OK")
     return 0
@@ -108,6 +108,10 @@ def _load_registry(path: Path) -> dict[str, str]:
 
 def _is_separator(cell: str) -> bool:
     return cell != "" and all(char in "-:" for char in cell)
+
+
+def _sniff(head: bytes) -> str | None:
+    return None
 
 
 if __name__ == "__main__":
