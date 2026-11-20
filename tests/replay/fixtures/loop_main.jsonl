@@ -1,0 +1,14 @@
+{"schema": "v2", "type": "gesture", "t": 0.0, "kind": "Open_Palm", "hand": "right", "landmarks": [[0.2, 0.5]]}
+{"schema": "v2", "type": "gesture", "t": 0.3, "kind": "Open_Palm", "hand": "right", "landmarks": [[0.8, 0.5]]}
+{"schema": "v2", "type": "gesture", "t": 0.6, "kind": "Open_Palm", "hand": "right", "landmarks": [[0.2, 0.5]]}
+{"schema": "v2", "type": "gesture", "t": 0.9, "kind": "Open_Palm", "hand": "right", "landmarks": [[0.8, 0.5]]}
+{"schema": "v2", "type": "gesture", "t": 1.0, "kind": "Pointing_Up", "hand": "right", "landmarks": [[0.2, 0.2]]}
+{"schema": "v2", "type": "gesture", "t": 1.8, "kind": "Pointing_Up", "hand": "right", "landmarks": [[0.2, 0.2]]}
+{"schema": "v2", "type": "gesture", "t": 2.0, "kind": "Pointing_Up", "hand": "right", "landmarks": [[0.8, 0.6]]}
+{"schema": "v2", "type": "gesture", "t": 2.8, "kind": "Pointing_Up", "hand": "right", "landmarks": [[0.8, 0.6]]}
+{"schema": "v2", "type": "observation", "t": 3.0, "window_title": "Notes", "text": "buy milk"}
+{"schema": "v2", "type": "gesture", "t": 3.2, "kind": "Thumb_Up", "hand": "right", "landmarks": null}
+{"schema": "v2", "type": "gesture", "t": 3.7, "kind": "Thumb_Up", "hand": "right", "landmarks": null}
+{"schema": "v2", "type": "proposal", "t": 4.0, "text": "todo: buy milk"}
+{"schema": "v2", "type": "gesture", "t": 4.2, "kind": "Thumb_Up", "hand": "right", "landmarks": null}
+{"schema": "v2", "type": "gesture", "t": 4.7, "kind": "Thumb_Up", "hand": "right", "landmarks": null}

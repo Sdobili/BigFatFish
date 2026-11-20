@@ -1,0 +1,21 @@
+{"t": 0.0, "phase": "IDLE", "revisions": 0, "box": null, "hint": null, "effects": []}
+{"t": 0.3, "phase": "IDLE", "revisions": 0, "box": null, "hint": null, "effects": []}
+{"t": 0.6, "phase": "IDLE", "revisions": 0, "box": null, "hint": null, "effects": []}
+{"t": 0.9, "phase": "ATTENDING", "revisions": 0, "box": null, "hint": null, "effects": [{"kind": "Capture", "capture_id": "cap-0.9"}]}
+{"t": 1.0, "phase": "ATTENDING", "revisions": 0, "box": null, "hint": null, "effects": []}
+{"t": 1.8, "phase": "SELECTING", "revisions": 0, "box": null, "hint": null, "effects": []}
+{"t": 2.0, "phase": "SELECTING", "revisions": 0, "box": null, "hint": null, "effects": []}
+{"t": 2.8, "phase": "PROPOSED", "revisions": 0, "box": [[0.2, 0.2], [0.8, 0.6]], "hint": null, "effects": []}
+{"t": 3.0, "phase": "SELECTING", "revisions": 0, "box": null, "hint": [[0.2, 0.2], [0.8, 0.6]], "effects": []}
+{"t": 3.2, "phase": "SELECTING", "revisions": 0, "box": null, "hint": [[0.2, 0.2], [0.8, 0.6]], "effects": []}
+{"t": 4.0, "phase": "SELECTING", "revisions": 0, "box": null, "hint": [[0.2, 0.2], [0.8, 0.6]], "effects": []}
+{"t": 4.2, "phase": "SELECTING", "revisions": 0, "box": null, "hint": [[0.2, 0.2], [0.8, 0.6]], "effects": []}
+{"t": 5.0, "phase": "PROPOSED", "revisions": 0, "box": [[0.1, 0.1], [0.9, 0.9]], "hint": [[0.2, 0.2], [0.8, 0.6]], "effects": []}
+{"t": 5.2, "phase": "PROPOSED", "revisions": 0, "box": [[0.1, 0.1], [0.9, 0.9]], "hint": [[0.2, 0.2], [0.8, 0.6]], "effects": []}
+{"t": 5.4, "phase": "PROPOSED", "revisions": 0, "box": [[0.1, 0.1], [0.9, 0.9]], "hint": [[0.2, 0.2], [0.8, 0.6]], "effects": []}
+{"t": 5.9, "phase": "EXECUTING", "revisions": 0, "box": [[0.1, 0.1], [0.9, 0.9]], "hint": [[0.2, 0.2], [0.8, 0.6]], "effects": []}
+{"t": 6.2, "phase": "REVIEW", "revisions": 0, "box": [[0.1, 0.1], [0.9, 0.9]], "hint": [[0.2, 0.2], [0.8, 0.6]], "effects": []}
+{"t": 6.4, "phase": "EXECUTING", "revisions": 1, "box": [[0.1, 0.1], [0.9, 0.9]], "hint": [[0.2, 0.2], [0.8, 0.6]], "effects": []}
+{"t": 6.8, "phase": "REVIEW", "revisions": 1, "box": [[0.1, 0.1], [0.9, 0.9]], "hint": [[0.2, 0.2], [0.8, 0.6]], "effects": []}
+{"t": 7.0, "phase": "REVIEW", "revisions": 1, "box": [[0.1, 0.1], [0.9, 0.9]], "hint": [[0.2, 0.2], [0.8, 0.6]], "effects": []}
+{"t": 7.5, "phase": "DELIVERED", "revisions": 1, "box": [[0.1, 0.1], [0.9, 0.9]], "hint": [[0.2, 0.2], [0.8, 0.6]], "effects": [{"kind": "Deliver", "capture_id": "cap-0.9", "box": [[0.1, 0.1], [0.9, 0.9]], "window_title": "Notes", "text": "buy milk", "proposal": "todo: buy oat milk", "revisions": 1}]}
