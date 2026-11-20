@@ -90,11 +90,22 @@ def load_event(data: Mapping[str, object]) -> Event:
             kind=_as_str(data["kind"]),
             hand=_as_str(data["hand"]),
             landmarks=_as_landmarks(data["landmarks"]),
+            score=_as_optional_float(data.get("score")),
         )
     if event_type == "intent":
         return Intent(t=_as_float(data["t"]), kind=_as_str(data["kind"]))
     if event_type == "status":
         return Status(t=_as_float(data["t"]), kind=_as_str(data["kind"]))
+    if event_type == "tick":
+        return Tick(t=_as_float(data["t"]))
+    if event_type == "observation":
+        return Observation(
+            t=_as_float(data["t"]),
+            window_title=_as_str(data["window_title"]),
+            text=_as_str(data["text"]),
+        )
+    if event_type == "proposal":
+        return ProposalReady(t=_as_float(data["t"]), text=_as_str(data["text"]))
     raise ValueError(f"unknown event type: {event_type!r}")
 
 
@@ -110,6 +121,12 @@ def _as_point(value: object) -> tuple[float, ...]:
     if not isinstance(value, list):
         raise TypeError("landmark must be a list of numbers")
     return tuple(_as_float(item) for item in value)
+
+
+def _as_optional_float(value: object) -> float | None:
+    if value is None:
+        return None
+    return _as_float(value)
 
 
 def _as_float(value: object) -> float:

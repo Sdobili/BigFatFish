@@ -22,4 +22,7 @@ class Channel(Generic[T]):
         return True
 
     def get_nowait(self) -> T | None:
-        return None
+        try:
+            return self._items.get_nowait()
+        except queue.Empty:
+            return None

@@ -28,7 +28,8 @@ class FakeClock:
         return self._wall
 
     def advance(self, seconds: float) -> None:
-        """Red stub: the clock stays put."""
+        self._monotonic += seconds
+        self._wall += seconds
 
 
 class SystemClock:

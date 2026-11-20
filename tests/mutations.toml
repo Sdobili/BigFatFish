@@ -54,6 +54,10 @@ required_ids = [
     "hard-dup-off",
     "hard-missing-off",
     "hard-utf8-off",
+    "r1-schema-v1-dropped",
+    "r1-score-gate-off",
+    "r1-hand-case",
+    "r1-live-not-skipped",
 ]
 
 guard_tests = [
@@ -590,3 +594,41 @@ replacement = "sys.stdout.write(\"\\n\".join(violations) + \"\\n\")"
 kill = ["tests/test_check_assets.py::test_check_assets_output_survives_cp1252"]
 expect = "UnicodeEncodeError:"
 why = "cp1252 下改回 sys.stdout.write 会抛 UnicodeEncodeError，违规信息出不来"
+
+# R1
+
+[[mutant]]
+id = "r1-schema-v1-dropped"
+file = "src/bigfatfish/replay/format.py"
+original = "_READABLE = frozenset({\"v1\", \"v2\"})"
+replacement = "_READABLE = frozenset({\"v2\"})"
+kill = ["tests/replay/test_replay_sample.py::test_replay_sample"]
+expect = "expected schema"
+why = "不再读 v1，sample 回放必须报 schema"
+
+[[mutant]]
+id = "r1-score-gate-off"
+file = "src/bigfatfish/perception/gestures.py"
+original = "if top.score < min_hand_score:"
+replacement = "if False:"
+kill = ["tests/perception/test_gestures.py::test_low_score_hand_dropped"]
+expect = "low score hand must be dropped"
+why = "低分手势也出事件"
+
+[[mutant]]
+id = "r1-hand-case"
+file = "src/bigfatfish/perception/gestures.py"
+original = ".category_name.lower()"
+replacement = ".category_name"
+kill = ["tests/perception/test_gestures.py::test_hand_is_lowercase"]
+expect = "hand must be lowercase"
+why = "handedness 不转小写"
+
+[[mutant]]
+id = "r1-live-not-skipped"
+file = "tests/conftest.py"
+original = "if not config.getoption(\"--live\"):"
+replacement = "if False:"
+kill = ["tests/live/test_qwen_smoke.py::test_qwen_chat_completion"]
+expect = "QWEN_API_KEY 或 QWEN_BASE_URL 未设置"
+why = "没传 --live 也跑 live 测试，缺变量必须失败"
