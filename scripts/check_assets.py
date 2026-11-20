@@ -4,12 +4,14 @@ Scans `git ls-files` only. An ignored file that was never added is invisible.
 Images and design sources may live in assets/placeholder/ or assets/own/, and
 each one must be listed in ASSETS.md with source 自制 or 程序生成.
 A tracked file is also an asset when its first 1024 bytes match _SIGNATURES.
+A path listed twice, or listed but not tracked, is a violation.
 """
 
 import subprocess
 import sys
 from collections.abc import Callable
 from pathlib import Path
+from typing import TextIO
 
 _ASSET_SUFFIXES = frozenset(
     {
@@ -50,9 +52,13 @@ _SOURCES = frozenset({"自制", "程序生成"})
 
 def main() -> int:
     root = _repo_root()
-    registry = _load_registry(root / "ASSETS.md")
-    violations: list[str] = []
-    for path in _tracked_files(root):
+    tracked = _tracked_files(root)
+    registry, violations = _load_registry(root / "ASSETS.md")
+    tracked_set = set(tracked)
+    for path in registry:
+        if path not in tracked_set:
+            violations.append(f"{path}: 在 ASSETS.md 登记，但不在 git 跟踪的文件里")
+    for path in tracked:
         by_suffix = Path(path).suffix.lower() in _ASSET_SUFFIXES
         sniffed = _sniff(_read_head(root / path))
         if not by_suffix:
@@ -75,12 +81,13 @@ def main() -> int:
     return 0
 
 
-def _write_utf8(text: str) -> None:
+def _write_utf8(text: str, stream: TextIO | None = None) -> None:
     """Write UTF-8 bytes so a cp1252 Windows console does not raise."""
+    target = sys.stdout if stream is None else stream
     payload = (text + "\n").encode("utf-8")
-    raw = getattr(sys.stdout, "buffer", None)
+    raw = getattr(target, "buffer", None)
     if raw is None:
-        sys.stdout.write(text + "\n")
+        target.write(text + "\n")
         return
     raw.write(payload)
     raw.flush()
@@ -106,16 +113,23 @@ def _tracked_files(root: Path) -> list[str]:
         capture_output=True,
     )
     if result.returncode != 0:
+        _write_utf8(
+            f"git ls-files 失败（退出码 {result.returncode}）",
+            sys.stderr,
+        )
         sys.stderr.buffer.write(result.stderr)
         raise SystemExit(result.returncode)
     return [item for item in result.stdout.decode("utf-8").split("\0") if item]
 
 
-def _load_registry(path: Path) -> dict[str, str]:
-    if not path.is_file():
-        return {}
+def _load_registry(path: Path) -> tuple[dict[str, str], list[str]]:
     found: dict[str, str] = {}
-    for line in path.read_text(encoding="utf-8").splitlines():
+    first_line: dict[str, int] = {}
+    violations: list[str] = []
+    if not path.is_file():
+        return found, violations
+    lines = path.read_text(encoding="utf-8").splitlines()
+    for line_no, line in enumerate(lines, start=1):
         row = line.strip()
         if not row.startswith("|"):
             continue
@@ -125,8 +139,15 @@ def _load_registry(path: Path) -> dict[str, str]:
         asset_path, source = cells[0], cells[1]
         if asset_path == "路径" or _is_separator(asset_path):
             continue
+        if asset_path in first_line:
+            earlier = first_line[asset_path]
+            violations.append(
+                f"{asset_path}: ASSETS.md 重复登记（第 {earlier}、{line_no} 行）"
+            )
+        else:
+            first_line[asset_path] = line_no
         found[asset_path] = source
-    return found
+    return found, violations
 
 
 def _is_separator(cell: str) -> bool:
