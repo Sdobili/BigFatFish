@@ -1,5 +1,6 @@
 """Closed-loop phases and hold timing. Durations use event timestamps."""
 
+import sys
 from dataclasses import dataclass, replace
 
 from bigfatfish.core.events import GestureEvent, Observation, ProposalReady, Tick
@@ -38,6 +39,14 @@ LoopEvent = GestureEvent | Tick | Observation | ProposalReady
 Box = tuple[tuple[float, float], tuple[float, float]]
 
 
+class ConfirmationToken:
+    """Issued when a confirmation gesture completes."""
+
+    def __init__(self) -> None:
+        if sys._getframe(1).f_globals.get("__name__") != __name__:
+            raise TypeError("ConfirmationToken is sealed")
+
+
 @dataclass(frozen=True, slots=True)
 class Capture:
     capture_id: str
@@ -56,6 +65,7 @@ class Deliver:
     text: str
     proposal: str
     revisions: int
+    token: ConfirmationToken
 
 
 Effect = Capture | Discard | Deliver
@@ -200,6 +210,7 @@ def _on_thumb_up(state: LoopState) -> tuple[LoopState, list[Effect]]:
             text=state.text,
             proposal=state.proposal,
             revisions=state.revisions,
+            token=ConfirmationToken(),
         )
     ]
 
