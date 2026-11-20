@@ -264,6 +264,8 @@ def test_bad_test_id_exits_2(tmp_path: Path) -> None:
     )
     result = _run(tmp_path)
     assert result.returncode == 2
+    assert "baseline failed" in result.stdout
+    assert "ERROR missing-test" not in result.stdout
 
 
 def test_failing_baseline_exits_2(tmp_path: Path) -> None:

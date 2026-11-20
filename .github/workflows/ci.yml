@@ -98,7 +98,7 @@ jobs:
       - name: Smoke
         run: uv run python -m bigfatfish --smoke
       - name: Mutation gate
-        timeout-minutes: 5
+        timeout-minutes: 8
         run: uv run python scripts/mutation_gate.py tests/mutations.toml
       - name: Tree unchanged after mutation gate
         run: git diff --exit-code

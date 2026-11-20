@@ -25,6 +25,13 @@ def test_bus_never_blocks() -> None:
     assert result == [False]
 
 
+def test_bus_capacity_matches_maxsize() -> None:
+    from bigfatfish.core.bus import Channel
+
+    channel = Channel(maxsize=2)
+    assert [channel.put_nowait(index) for index in range(3)] == [True, True, False]
+
+
 def test_channel_rejects_non_positive_maxsize() -> None:
     from bigfatfish.core.bus import Channel
 
