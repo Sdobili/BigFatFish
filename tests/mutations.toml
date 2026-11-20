@@ -63,6 +63,12 @@ required_ids = [
     "r1-hold-boundary",
     "r1-hold-zero",
     "r1-score-threshold-off",
+    "r1-deliver-off",
+    "r1-wall-clock",
+    "r1-revise-not-counted",
+    "r1-revise-limit",
+    "r1-timeout-off",
+    "r1-cancel-keeps-capture",
 ]
 
 guard_tests = [
@@ -682,3 +688,57 @@ replacement = "if False:"
 kill = ["tests/agent/test_hold.py::test_low_score_breaks_hold"]
 expect = "low score must break hold"
 why = "低于阈值的分数仍算有效手势"
+
+[[mutant]]
+id = "r1-deliver-off"
+file = "src/bigfatfish/agent/loop.py"
+original = "(\"REVIEW\", \"Thumb_Up\"): \"DELIVERED\","
+replacement = "(\"REVIEW\", \"Thumb_Up\"): \"REVIEW\","
+kill = ["tests/replay/test_replay_loop.py::test_loop_main_path"]
+expect = "loop trace differs from golden"
+why = "REVIEW 点赞不再交付"
+
+[[mutant]]
+id = "r1-wall-clock"
+file = "src/bigfatfish/agent/loop.py"
+original = "now = ev.t"
+replacement = "now = __import__(\"time\").monotonic()"
+kill = ["tests/replay/test_replay_loop.py::test_loop_main_path"]
+expect = "wall clock"
+why = "闭环改读墙钟，禁墙钟回放必须失败"
+
+[[mutant]]
+id = "r1-revise-not-counted"
+file = "src/bigfatfish/agent/loop.py"
+original = "revisions = state.revisions + 1"
+replacement = "revisions = state.revisions"
+kill = ["tests/replay/test_replay_loop.py::test_loop_revise_path"]
+expect = "loop trace differs from golden"
+why = "修正时不累加修正次数"
+
+[[mutant]]
+id = "r1-revise-limit"
+file = "src/bigfatfish/agent/loop.py"
+original = "_MAX_REVISIONS = 2"
+replacement = "_MAX_REVISIONS = 3"
+kill = ["tests/agent/test_loop.py::test_third_revise_is_ignored"]
+expect = "third revise must be ignored"
+why = "第 3 次修正也生效"
+
+[[mutant]]
+id = "r1-timeout-off"
+file = "src/bigfatfish/agent/loop.py"
+original = "_IDLE_TIMEOUT_S = 20.0"
+replacement = "_IDLE_TIMEOUT_S = float(\"inf\")"
+kill = ["tests/agent/test_loop.py::test_idle_timeout_after_20s"]
+expect = "must return to IDLE at 20s"
+why = "空闲不再在 20 秒回 IDLE"
+
+[[mutant]]
+id = "r1-cancel-keeps-capture"
+file = "src/bigfatfish/agent/loop.py"
+original = "effects.append(Discard(state.capture_id))"
+replacement = "pass"
+kill = ["tests/agent/test_loop.py::test_cancel_discards_capture"]
+expect = "cancel must discard capture"
+why = "取消时不发 Discard"

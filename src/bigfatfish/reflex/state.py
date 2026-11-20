@@ -13,6 +13,8 @@ class ReflexState:
     gaze_hand: str
     nodding: bool
     nods: int
+    tilting: bool
+    shrinking: bool
     follow_x: float | None
     follow_y: float | None
 
@@ -25,6 +27,8 @@ class ReflexState:
             "gaze_hand": self.gaze_hand,
             "nodding": self.nodding,
             "nods": self.nods,
+            "tilting": self.tilting,
+            "shrinking": self.shrinking,
             "follow": follow,
         }
 
@@ -35,6 +39,8 @@ def initial() -> ReflexState:
         gaze_hand="",
         nodding=False,
         nods=0,
+        tilting=False,
+        shrinking=False,
         follow_x=None,
         follow_y=None,
     )
@@ -49,6 +55,8 @@ def step(state: ReflexState, event: GestureEvent) -> ReflexState:
         gaze_hand=event.hand,
         nodding=nodding,
         nods=nods,
+        tilting=event.kind == "Thumb_Down",
+        shrinking=event.kind == "Closed_Fist",
         follow_x=follow_x,
         follow_y=follow_y,
     )

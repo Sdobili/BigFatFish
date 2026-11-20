@@ -1,0 +1,14 @@
+{"t": 0.0, "phase": "IDLE", "revisions": 0, "box": null, "hint": null, "effects": []}
+{"t": 0.25, "phase": "IDLE", "revisions": 0, "box": null, "hint": null, "effects": []}
+{"t": 0.5, "phase": "IDLE", "revisions": 0, "box": null, "hint": null, "effects": []}
+{"t": 0.75, "phase": "ATTENDING", "revisions": 0, "box": null, "hint": null, "effects": [{"kind": "Capture", "capture_id": "cap-0.75"}]}
+{"t": 1.0, "phase": "ATTENDING", "revisions": 0, "box": null, "hint": null, "effects": []}
+{"t": 2.0, "phase": "SELECTING", "revisions": 0, "box": null, "hint": null, "effects": []}
+{"t": 3.0, "phase": "SELECTING", "revisions": 0, "box": null, "hint": null, "effects": []}
+{"t": 4.0, "phase": "PROPOSED", "revisions": 0, "box": [[0.2, 0.2], [0.8, 0.6]], "hint": null, "effects": []}
+{"t": 4.5, "phase": "PROPOSED", "revisions": 0, "box": [[0.2, 0.2], [0.8, 0.6]], "hint": null, "effects": []}
+{"t": 5.0, "phase": "PROPOSED", "revisions": 0, "box": [[0.2, 0.2], [0.8, 0.6]], "hint": null, "effects": []}
+{"t": 6.0, "phase": "EXECUTING", "revisions": 0, "box": [[0.2, 0.2], [0.8, 0.6]], "hint": null, "effects": []}
+{"t": 6.5, "phase": "REVIEW", "revisions": 0, "box": [[0.2, 0.2], [0.8, 0.6]], "hint": null, "effects": []}
+{"t": 7.0, "phase": "REVIEW", "revisions": 0, "box": [[0.2, 0.2], [0.8, 0.6]], "hint": null, "effects": []}
+{"t": 8.0, "phase": "DELIVERED", "revisions": 0, "box": [[0.2, 0.2], [0.8, 0.6]], "hint": null, "effects": [{"kind": "Deliver", "capture_id": "cap-0.75", "box": [[0.2, 0.2], [0.8, 0.6]], "window_title": "Notes", "text": "buy milk", "proposal": "todo: buy milk", "revisions": 0}]}
