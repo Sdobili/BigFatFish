@@ -9,27 +9,27 @@ def test_third_revise_is_ignored() -> None:
     for event in (
         GestureEvent(t=0.0, kind="Wave", hand="right"),
         *_points(1.0, (0.2, 0.2), (0.8, 0.6)),
-        GestureEvent(t=3.0, kind="Thumb_Up", hand="right"),
-        GestureEvent(t=3.5, kind="Thumb_Up", hand="right"),
-        ProposalReady(t=4.0, text="card"),
+        GestureEvent(t=5.0, kind="Thumb_Up", hand="right"),
+        GestureEvent(t=6.0, kind="Thumb_Up", hand="right"),
+        ProposalReady(t=6.5, text="card"),
     ):
         state, _ = step(state, event)
     assert state.phase == "REVIEW"
     assert state.revisions == 0
 
-    state, _ = step(state, GestureEvent(t=5.0, kind="Thumb_Down", hand="right"))
+    state, _ = step(state, GestureEvent(t=7.0, kind="Thumb_Down", hand="right"))
     assert state.phase == "EXECUTING"
     assert state.revisions == 1
-    state, _ = step(state, ProposalReady(t=5.5, text="card-2"))
+    state, _ = step(state, ProposalReady(t=7.5, text="card-2"))
     assert state.phase == "REVIEW"
 
-    state, _ = step(state, GestureEvent(t=6.0, kind="Thumb_Down", hand="right"))
+    state, _ = step(state, GestureEvent(t=8.0, kind="Thumb_Down", hand="right"))
     assert state.phase == "EXECUTING"
     assert state.revisions == 2
-    state, _ = step(state, ProposalReady(t=6.5, text="card-3"))
+    state, _ = step(state, ProposalReady(t=8.5, text="card-3"))
     assert state.phase == "REVIEW"
 
-    state, effects = step(state, GestureEvent(t=7.0, kind="Thumb_Down", hand="right"))
+    state, effects = step(state, GestureEvent(t=9.0, kind="Thumb_Down", hand="right"))
     assert effects == [], "third revise must be ignored"
     assert state.revisions == 2, "third revise must be ignored"
     assert state.phase == "REVIEW", "third revise must be ignored"
@@ -64,15 +64,15 @@ def _points(
 ) -> list[GestureEvent]:
     return [
         GestureEvent(t=t0, kind="Pointing_Up", hand="right", landmarks=(first,)),
-        GestureEvent(t=t0 + 0.8, kind="Pointing_Up", hand="right", landmarks=(first,)),
+        GestureEvent(t=t0 + 1.0, kind="Pointing_Up", hand="right", landmarks=(first,)),
         GestureEvent(
-            t=t0 + 1.0,
+            t=t0 + 2.0,
             kind="Pointing_Up",
             hand="right",
             landmarks=(second,),
         ),
         GestureEvent(
-            t=t0 + 1.8,
+            t=t0 + 3.0,
             kind="Pointing_Up",
             hand="right",
             landmarks=(second,),

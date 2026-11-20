@@ -45,14 +45,14 @@ def render_loop_trace(events: list[SessionEvent]) -> list[str]:
     detector = WaveDetector()
     state = agent_loop.initial()
     lines: list[str] = []
-    for event in events:
-        incoming: agent_loop.LoopEvent = event
-        if isinstance(event, GestureEvent):
-            wave = detector.feed(event)
+    for recorded in events:
+        incoming: agent_loop.LoopEvent = recorded
+        if isinstance(recorded, GestureEvent):
+            wave = detector.feed(recorded)
             if wave is not None:
                 incoming = wave
         state, effects = agent_loop.step(state, incoming)
-        payload = _loop_line(event.t, state, effects)
+        payload = _loop_line(recorded.t, state, effects)
         lines.append(json.dumps(payload, ensure_ascii=False))
     return lines
 
