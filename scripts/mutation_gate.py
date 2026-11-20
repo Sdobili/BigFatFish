@@ -300,8 +300,8 @@ def _one_mutant(root: Path, mutant: Mutant, hang_guard: float) -> str:
         outcome = _judge(mutant, code, output)
     finally:
         path.write_bytes(original)
-        _bump_mtime(path)
         restored = hashlib.sha256(path.read_bytes()).digest()
+        _bump_mtime(path)
         if restored != hashlib.sha256(original).digest():
             print(f"ERROR {mutant.id}: restore sha256 mismatch")
             outcome = "error"
