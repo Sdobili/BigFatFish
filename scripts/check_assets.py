@@ -112,9 +112,9 @@ def _tracked_files(root: Path) -> list[str]:
         capture_output=True,
     )
     if result.returncode != 0:
-        _write_utf8(
+        print(
             f"git ls-files 失败（退出码 {result.returncode}）",
-            sys.stderr,
+            file=sys.stderr,
         )
         sys.stderr.buffer.write(result.stderr)
         raise SystemExit(result.returncode)
