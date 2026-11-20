@@ -46,6 +46,42 @@ _SNIFF_CASES: tuple[tuple[bytes, str | None], ...] = (
     (b"print('hello')\n", None),
     (b"PK\x03\x04" + b"\x00" * 26 + b"readme.txt", None),
     (b"BM hello", None),
+    (b"BM" + b"\x00" * 12 + struct.pack("<I", 16) + b" text", None),
+    (b"\x00\x00\x01\x00" + struct.pack("<H", 0), None),
+    (b"RIFF\x00\x00\x00\x00AVI ", None),
+    (b"<?xml version='1.0'?>", None),
+    (b"PK\x03\x04" + b"\x00" * 26 + b"mimetypeapplication/zip", None),
+)
+_ASSET_SUFFIXES = (
+    ".ai",
+    ".apng",
+    ".avif",
+    ".bmp",
+    ".clip",
+    ".cur",
+    ".eps",
+    ".gif",
+    ".heic",
+    ".heif",
+    ".ico",
+    ".jfif",
+    ".jpeg",
+    ".jpg",
+    ".kra",
+    ".m4v",
+    ".mkv",
+    ".mov",
+    ".mp4",
+    ".png",
+    ".psb",
+    ".psd",
+    ".svg",
+    ".svgz",
+    ".tif",
+    ".tiff",
+    ".webm",
+    ".webp",
+    ".xcf",
 )
 
 
@@ -64,8 +100,8 @@ def test_check_assets_rejects_other_source(tmp_path: Path) -> None:
 
     result = _run(repo)
     combined = result.stdout + result.stderr
-    assert "来源必须是" in combined
     assert result.returncode != 0
+    assert "来源必须是" in combined
     assert "OK" not in result.stdout.splitlines()
 
 
@@ -81,9 +117,9 @@ def test_check_assets_rejects_unregistered_image(tmp_path: Path) -> None:
 
     result = _run(repo)
     combined = result.stdout + result.stderr
+    assert result.returncode != 0
     assert "assets/placeholder/extra.png" in combined
     assert "未在 ASSETS.md 登记" in combined
-    assert result.returncode != 0
     assert "OK" not in result.stdout.splitlines()
 
 
@@ -102,10 +138,10 @@ def test_check_assets_rejects_image_outside_whitelist(tmp_path: Path) -> None:
 
     result = _run(repo)
     combined = result.stdout + result.stderr
+    assert result.returncode != 0
     assert "notes/pic.png" in combined
     assert "assets/placeholder/" in combined
     assert "assets/own/" in combined
-    assert result.returncode != 0
     assert "OK" not in result.stdout.splitlines()
 
 
@@ -125,26 +161,28 @@ def test_check_assets_rejects_force_tracked_local(tmp_path: Path) -> None:
 
     result = _run(repo)
     combined = result.stdout + result.stderr
-    assert "assets/local/x.png" in combined
     assert result.returncode != 0
+    assert "assets/local/x.png" in combined
     assert "OK" not in result.stdout.splitlines()
 
 
-def test_check_assets_rejects_uppercase_extension(tmp_path: Path) -> None:
+@pytest.mark.parametrize("suffix", [".PNG", ".CLIP"])
+def test_check_assets_rejects_uppercase_extension(tmp_path: Path, suffix: str) -> None:
     repo = tmp_path / "repo"
     _init_repo(repo)
-    image = repo / "assets" / "placeholder" / "X.PNG"
+    relative = f"assets/placeholder/sample{suffix}"
+    image = repo / relative
     image.parent.mkdir(parents=True)
-    image.write_bytes(_png())
+    image.write_bytes(b"not-a-magic-header\n")
     (repo / "ASSETS.md").write_text(_registry([]), encoding="utf-8")
-    _git(repo, "add", "ASSETS.md", "assets/placeholder/X.PNG")
-    _git(repo, "commit", "-m", "add an uppercase png")
+    _git(repo, "add", "ASSETS.md", relative)
+    _git(repo, "commit", "-m", "add an uppercase asset")
 
     result = _run(repo)
     combined = result.stdout + result.stderr
-    assert "X.PNG" in combined
-    assert "未在 ASSETS.md 登记" in combined
     assert result.returncode != 0
+    assert relative in combined
+    assert "未在 ASSETS.md 登记" in combined
     assert "OK" not in result.stdout.splitlines()
 
 
@@ -158,8 +196,8 @@ def test_check_assets_rejects_when_ls_files_fails(tmp_path: Path) -> None:
     bad_index.write_bytes(b"not-an-index")
 
     result = _run(repo, extra_env={"GIT_INDEX_FILE": str(bad_index)})
-    assert "git ls-files 失败" in result.stderr
     assert result.returncode != 0
+    assert f"git ls-files 失败（退出码 {result.returncode}）" in result.stderr
     assert "OK" not in result.stdout.splitlines()
 
 
@@ -234,14 +272,32 @@ def test_check_assets_rejects_png_renamed_to_bin(tmp_path: Path) -> None:
     result = _run(repo)
     combined = result.stdout + result.stderr
     assert "notes/pic.bin: 文件头是 PNG" in combined
+    assert "notes/pic.bin: 图片必须放在 assets/placeholder/ 或 assets/own/" in combined
+    assert "notes/pic.bin: 未在 ASSETS.md 登记" in combined
     assert result.returncode != 0
     assert "OK" not in result.stdout.splitlines()
 
 
-@pytest.mark.parametrize(
-    "suffix",
-    [".tiff", ".ico", ".avif", ".heic", ".ai", ".xcf", ".mov"],
-)
+def test_check_assets_rejects_signature_at_end_of_head(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    image = repo / "notes" / "late.bin"
+    image.parent.mkdir(parents=True)
+    image.write_bytes(b" " * 1020 + b"<svg")
+    (repo / "ASSETS.md").write_text(_registry([]), encoding="utf-8")
+    _git(repo, "add", "ASSETS.md", "notes/late.bin")
+    _git(repo, "commit", "-m", "add an svg signature at the end of the head")
+
+    result = _run(repo)
+    combined = result.stdout + result.stderr
+    assert result.returncode != 0
+    assert "notes/late.bin: 文件头是 SVG" in combined
+    assert "notes/late.bin: 图片必须放在 assets/placeholder/ 或 assets/own/" in combined
+    assert "notes/late.bin: 未在 ASSETS.md 登记" in combined
+    assert "OK" not in result.stdout.splitlines()
+
+
+@pytest.mark.parametrize("suffix", _ASSET_SUFFIXES)
 def test_check_assets_rejects_new_extensions(tmp_path: Path, suffix: str) -> None:
     repo = tmp_path / "repo"
     _init_repo(repo)
@@ -284,7 +340,7 @@ def test_check_assets_rejects_duplicate_registration(
 
     result = _run(repo)
     combined = result.stdout + result.stderr
-    assert "assets/own/x.png: ASSETS.md 重复登记" in combined
+    assert "assets/own/x.png: ASSETS.md 重复登记（第 5、6 行）" in combined
     assert result.returncode != 0
     assert "OK" not in result.stdout.splitlines()
 
