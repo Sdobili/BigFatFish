@@ -1,0 +1,52 @@
+required_ids = [
+    "bus-put-nonblocking",
+    "bus-full-returns-false",
+    "bus-maxsize-bounded",
+    "bus-maxsize-check-bound",
+    "bus-maxsize-check-raise",
+]
+
+[[mutant]]
+id = "bus-put-nonblocking"
+file = "src/bigfatfish/core/bus.py"
+original = "self._items.put_nowait(ev)"
+replacement = "self._items.put(ev)"
+kill = ["tests/test_core.py::test_bus_never_blocks"]
+expect = "assert not True"
+why = "put 会阻塞，反射层会被卡住"
+
+[[mutant]]
+id = "bus-full-returns-false"
+file = "src/bigfatfish/core/bus.py"
+original = "            return False"
+replacement = "            return True"
+kill = ["tests/test_core.py::test_bus_never_blocks"]
+expect = "[True] == [False]"
+why = "队列满时必须返回 False，否则丢弃被当成写入成功"
+
+[[mutant]]
+id = "bus-maxsize-bounded"
+file = "src/bigfatfish/core/bus.py"
+original = "queue.Queue(maxsize=maxsize)"
+replacement = "queue.Queue(maxsize=0)"
+kill = ["tests/test_core.py::test_bus_never_blocks"]
+expect = "[True] == [False]"
+why = "maxsize=0 是无限队列，满队列不再发生"
+
+[[mutant]]
+id = "bus-maxsize-check-bound"
+file = "src/bigfatfish/core/bus.py"
+original = "if maxsize < 1:"
+replacement = "if maxsize < 0:"
+kill = ["tests/test_core.py::test_channel_rejects_non_positive_maxsize"]
+expect = "DID NOT RAISE"
+why = "maxsize 为 0 时必须拒绝"
+
+[[mutant]]
+id = "bus-maxsize-check-raise"
+file = "src/bigfatfish/core/bus.py"
+original = "raise ValueError(\"maxsize must be at least 1\")"
+replacement = "pass"
+kill = ["tests/test_core.py::test_channel_rejects_non_positive_maxsize"]
+expect = "DID NOT RAISE"
+why = "非法 maxsize 必须抛出 ValueError"
