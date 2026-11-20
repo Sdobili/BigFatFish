@@ -73,6 +73,10 @@ required_ids = [
     "r1-undo-window",
     "r1-token-unchecked",
     "r1-token-public",
+    "gate-baseline-guard-ignored",
+    "gate-baseline-guard-unbounded",
+    "r1-hypothesis-full-shrunk",
+    "gate-hypothesis-env-off",
 ]
 
 guard_tests = [
@@ -108,6 +112,9 @@ guard_tests = [
     "tests/test_mutation_gate.py::test_manifest_without_required_ids_exits_2",
     "tests/test_mutation_gate.py::test_mutant_not_in_required_ids_exits_2",
     "tests/test_mutation_gate.py::test_guard_test_without_own_mutant_exits_2",
+    "tests/test_mutation_gate.py::test_baseline_uses_baseline_guard",
+    "tests/test_mutation_gate.py::test_baseline_hang_exits_2",
+    "tests/test_mutation_gate.py::test_gate_sets_hypothesis_profile",
     "tests/test_mutation_manifest.py::test_guard_named_tests_are_listed",
     "tests/test_check_assets.py::test_sniff_bmp_accepts_other_dib_header_lengths",
     "tests/test_check_assets.py::test_sniff_kra_returns_none_for_inexact_mimetype",
@@ -442,7 +449,7 @@ why = "不查 expect"
 [[mutant]]
 id = "gate-baseline-off-bad-id"
 file = "scripts/mutation_gate.py"
-original = "    if _baseline_failed(root, mutants, parsed.hang_guard):"
+original = "    if _baseline_failed(root, mutants, parsed.baseline_guard):"
 replacement = "    if False:"
 kill = ["tests/test_mutation_gate.py::test_bad_test_id_exits_2"]
 expect = "assert 'baseline failed' in"
@@ -451,7 +458,7 @@ why = "不跑基线（坏 node id）"
 [[mutant]]
 id = "gate-baseline-off"
 file = "scripts/mutation_gate.py"
-original = "    if _baseline_failed(root, mutants, parsed.hang_guard):"
+original = "    if _baseline_failed(root, mutants, parsed.baseline_guard):"
 replacement = "    if False:"
 kill = ["tests/test_mutation_gate.py::test_failing_baseline_exits_2"]
 expect = "AssertionError: assert 1 == 2"
@@ -746,6 +753,42 @@ replacement = "pass"
 kill = ["tests/agent/test_loop.py::test_cancel_discards_capture"]
 expect = "cancel must discard capture"
 why = "取消时不发 Discard"
+
+[[mutant]]
+id = "gate-baseline-guard-ignored"
+file = "scripts/mutation_gate.py"
+original = "    if _baseline_failed(root, mutants, parsed.baseline_guard):"
+replacement = "    if _baseline_failed(root, mutants, parsed.hang_guard):"
+kill = ["tests/test_mutation_gate.py::test_baseline_uses_baseline_guard"]
+expect = "AssertionError: assert 2 == 0"
+why = "基线改回用 hang guard"
+
+[[mutant]]
+id = "gate-baseline-guard-unbounded"
+file = "scripts/mutation_gate.py"
+original = "    if _baseline_failed(root, mutants, parsed.baseline_guard):"
+replacement = "    if _baseline_failed(root, mutants, 1e6):"
+kill = ["tests/test_mutation_gate.py::test_baseline_hang_exits_2"]
+expect = "baseline failed (pytest exit timeout)"
+why = "基线超时被放得很大，挂死不再被拦住"
+
+[[mutant]]
+id = "r1-hypothesis-full-shrunk"
+file = "tests/conftest.py"
+original = "max_examples=1000"
+replacement = "max_examples=100"
+kill = ["tests/test_hypothesis_profile.py::test_profiles"]
+expect = "full profile must run 1000 examples"
+why = "full profile 样本数被改成 100"
+
+[[mutant]]
+id = "gate-hypothesis-env-off"
+file = "scripts/mutation_gate.py"
+original = "    env[\"BIGFATFISH_HYPOTHESIS_PROFILE\"] = \"gate\"\n"
+replacement = ""
+kill = ["tests/test_mutation_gate.py::test_gate_sets_hypothesis_profile"]
+expect = "AssertionError: assert 2 == 0"
+why = "闸门子进程不设 hypothesis profile"
 
 [[mutant]]
 id = "r1-undo-noop"

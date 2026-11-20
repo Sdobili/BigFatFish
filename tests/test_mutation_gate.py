@@ -13,6 +13,8 @@ import textwrap
 import tomllib
 from pathlib import Path
 
+import pytest
+
 _SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "mutation_gate.py"
 _HANG_GUARD = "30"
 
@@ -124,7 +126,9 @@ def _project(
     return source_path
 
 
-def _run(tmp_path: Path, *extra: str) -> subprocess.CompletedProcess[str]:
+def _run(
+    tmp_path: Path, *extra: str, timeout: float | None = None
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(_SCRIPT), "--root", str(tmp_path), *extra],
         check=False,
@@ -132,6 +136,7 @@ def _run(tmp_path: Path, *extra: str) -> subprocess.CompletedProcess[str]:
         text=True,
         encoding="utf-8",
         errors="replace",
+        timeout=timeout,
     )
 
 
@@ -549,3 +554,123 @@ def test_guard_test_without_own_mutant_exits_2(tmp_path: Path) -> None:
         in result.stdout
     )
     assert "KILLED" not in result.stdout
+
+
+def test_baseline_uses_baseline_guard(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A cold pytest child, with bytecode writes off and a fresh cache prefix,
+    # takes longer than 1s (Windows CI reported about 0.8s inside pytest, and
+    # the process is slower than that). A 1s hang guard would time out the
+    # patched run too. 8s is above that startup and below the 10s sleep.
+    # The first red run used 20s/30s and the Windows job then hit its 10 minute
+    # limit during the gate.
+    monkeypatch.setenv("PYTEST_DISABLE_PLUGIN_AUTOLOAD", "1")
+    _project(
+        tmp_path,
+        _src(
+            """
+            import time
+
+
+            def value() -> int:
+                time.sleep(10)
+                return 1
+            """
+        ),
+        _src(
+            """
+            from sample import value
+
+
+            def test_value() -> None:
+                assert value() == 1
+            """
+        ),
+        _mutant(
+            mutant_id="slow-baseline",
+            original="time.sleep(10)\n    return 1",
+            replacement="return 0",
+            kill="tests/test_sample.py::test_value",
+            expect="assert 0 == 1",
+        ),
+    )
+    result = _run(tmp_path, "--hang-guard", "8", "--baseline-guard", "60")
+    assert result.returncode == 0
+    assert "KILLED" in result.stdout
+
+
+def test_baseline_hang_exits_2(tmp_path: Path) -> None:
+    source = _project(
+        tmp_path,
+        _src(
+            """
+            import time
+
+
+            def value() -> int:
+                time.sleep(5)
+                return 1
+            """
+        ),
+        _src(
+            """
+            from sample import value
+
+
+            def test_value() -> None:
+                assert value() == 1
+            """
+        ),
+        _mutant(
+            mutant_id="hangs-baseline",
+            original="time.sleep(5)",
+            replacement="return 0",
+            kill="tests/test_sample.py::test_value",
+            expect="assert 0 == 1",
+        ),
+    )
+    before = source.read_bytes()
+    timeout_message = "baseline failed (pytest exit " + "timeout)"
+    result = _run(tmp_path, "--baseline-guard", "2", timeout=60)
+    assert timeout_message in result.stdout
+    assert result.returncode == 2
+    assert "KILLED" not in result.stdout
+    assert source.read_bytes() == before
+
+
+def test_gate_sets_hypothesis_profile(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("BIGFATFISH_HYPOTHESIS_PROFILE", raising=False)
+    _project(
+        tmp_path,
+        _src(
+            """
+            def marker() -> str:
+                return "on"
+            """
+        ),
+        _src(
+            """
+            import os
+
+            from sample import marker
+
+
+            def test_value() -> None:
+                assert os.environ.get("BIGFATFISH_HYPOTHESIS_PROFILE") == "gate"
+                assert marker() == "on"
+            """
+        ),
+        _mutant(
+            mutant_id="profile-marker",
+            original='return "on"',
+            replacement='return "off"',
+            kill="tests/test_sample.py::test_value",
+            expect="assert 'off' == 'on'",
+        ),
+    )
+    result = _run(tmp_path)
+    assert result.returncode == 0
+    assert "KILLED" in result.stdout

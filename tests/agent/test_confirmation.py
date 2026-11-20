@@ -90,7 +90,7 @@ def _delivery_events(t0: float) -> list[LoopEvent]:
 
 
 @given(events=_sequences())
-@settings(max_examples=1000, derandomize=True, deadline=None, database=None)
+@settings(derandomize=True, deadline=None, database=None)
 def test_no_write_without_confirmation(events: list[LoopEvent]) -> None:
     with tempfile.TemporaryDirectory() as raw:
         root = Path(raw)
