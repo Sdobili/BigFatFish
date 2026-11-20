@@ -1,5 +1,6 @@
 """Closed-loop phases and hold timing. Durations use event timestamps."""
 
+import sys
 from dataclasses import dataclass, replace
 
 from bigfatfish.core.events import GestureEvent, Observation, ProposalReady, Tick
@@ -42,7 +43,8 @@ class ConfirmationToken:
     """Issued when a confirmation gesture completes."""
 
     def __init__(self) -> None:
-        return
+        if sys._getframe(1).f_globals.get("__name__") != __name__:
+            raise TypeError("ConfirmationToken is sealed")
 
 
 @dataclass(frozen=True, slots=True)

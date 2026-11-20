@@ -69,6 +69,10 @@ required_ids = [
     "r1-revise-limit",
     "r1-timeout-off",
     "r1-cancel-keeps-capture",
+    "r1-undo-noop",
+    "r1-undo-window",
+    "r1-token-unchecked",
+    "r1-token-public",
 ]
 
 guard_tests = [
@@ -742,3 +746,39 @@ replacement = "pass"
 kill = ["tests/agent/test_loop.py::test_cancel_discards_capture"]
 expect = "cancel must discard capture"
 why = "取消时不发 Discard"
+
+[[mutant]]
+id = "r1-undo-noop"
+file = "src/bigfatfish/agent/store.py"
+original = "connection.execute(\"DELETE FROM cards WHERE id = ?\", (card_id,))"
+replacement = "pass"
+kill = ["tests/agent/test_store.py::test_undo_restores_snapshot"]
+expect = "snapshot after undo differs"
+why = "undo logs but leaves the card row in place"
+
+[[mutant]]
+id = "r1-undo-window"
+file = "src/bigfatfish/agent/store.py"
+original = "if now_wall - card.created_at > _UNDO_WINDOW_S:"
+replacement = "if False:"
+kill = ["tests/agent/test_store.py::test_undo_after_10_minutes_refused"]
+expect = "undo after 10 minutes must be refused"
+why = "undo stays allowed after the 10 minute window"
+
+[[mutant]]
+id = "r1-token-unchecked"
+file = "src/bigfatfish/agent/store.py"
+original = "if not isinstance(token, ConfirmationToken):"
+replacement = "if False:"
+kill = ["tests/agent/test_confirmation.py::test_no_write_without_confirmation"]
+expect = "write without confirmation"
+why = "add writes even when the token is not a confirmation"
+
+[[mutant]]
+id = "r1-token-public"
+file = "src/bigfatfish/agent/loop.py"
+original = "if sys._getframe(1).f_globals.get(\"__name__\") != __name__:"
+replacement = "if False:"
+kill = ["tests/agent/test_confirmation.py::test_token_cannot_be_constructed"]
+expect = "DID NOT RAISE"
+why = "ConfirmationToken can be constructed outside the loop"
