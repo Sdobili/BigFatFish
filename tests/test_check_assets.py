@@ -311,8 +311,8 @@ def test_check_assets_rejects_new_extensions(tmp_path: Path, suffix: str) -> Non
 
     result = _run(repo)
     combined = result.stdout + result.stderr
-    assert f"{relative}: 未在 ASSETS.md 登记" in combined
     assert result.returncode != 0
+    assert f"{relative}: 未在 ASSETS.md 登记" in combined
     assert "OK" not in result.stdout.splitlines()
 
 

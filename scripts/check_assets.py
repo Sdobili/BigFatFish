@@ -60,7 +60,7 @@ def main() -> int:
             violations.append(f"{path}: 在 ASSETS.md 登记，但不在 git 跟踪的文件里")
     for path in tracked:
         sniffed = _sniff(_read_head(root / path))
-        if Path(path).suffix not in _ASSET_SUFFIXES:
+        if Path(path).suffix.lower() not in _ASSET_SUFFIXES:
             if sniffed is None:
                 continue
             violations.append(f"{path}: 文件头是 {sniffed}，按素材处理")
