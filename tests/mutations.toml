@@ -4,11 +4,96 @@ required_ids = [
     "bus-maxsize-bounded",
     "bus-maxsize-check-bound",
     "bus-maxsize-check-raise",
+    "bus-capacity-hardcoded",
+    "smoke-show",
+    "smoke-load-placeholder",
+    "smoke-render",
+    "smoke-stays-on-top",
+    "smoke-frameless",
+    "smoke-translucent",
+    "smoke-fake-qlabel",
+    "smoke-print-only",
+    "smoke-no-checks-no-show",
+    "replay-skip-event",
+    "replay-echo-golden",
+    "assets-skip-registration",
+    "assets-skip-directory",
+    "assets-worktree-only",
+    "assets-skip-source",
+    "assets-widen-sources",
+    "assets-case-sensitive-ext",
+    "assets-ignore-git-failure",
+    "replay-fist-no-nod",
+    "net-addopts-off-connect",
+    "net-addopts-off-socket",
+    "assets-skip-local",
+    "assets-head-window",
+    "assets-suffix-table-off",
+    "assets-sniff-unit-off",
+    "repo-gitignore-local-off",
+    "gate-snippet-missing-ok",
+    "gate-snippet-ambiguous-ok",
+    "gate-survivor-off",
+    "gate-expect-off",
+    "gate-baseline-off-bad-id",
+    "gate-baseline-off",
+    "gate-restore-off",
+    "gate-error-as-killed",
+    "gate-empty-check-off",
+    "gate-missing-id-off",
+    "gate-no-required-off",
+    "gate-extra-id-off",
+    "gate-guard-check-off",
+    "manifest-guard-entry-off",
+    "assets-bmp-dib-sizes-off",
+    "assets-kra-mime-loose",
+    "assets-read-head-guard-off",
+    "assets-lsfiles-msg-print",
     "hard-sniff-off",
     "hard-ok-on-violation",
     "hard-dup-off",
     "hard-missing-off",
     "hard-utf8-off",
+]
+
+guard_tests = [
+    "tests/test_core.py::test_bus_never_blocks",
+    "tests/test_core.py::test_channel_rejects_non_positive_maxsize",
+    "tests/test_no_network.py::test_create_connection_is_blocked",
+    "tests/test_no_network.py::test_socket_constructor_is_blocked",
+    "tests/test_reflex_nod.py::test_closed_fist_does_not_nod_and_thumb_up_does",
+    "tests/test_check_assets.py::test_check_assets_rejects_other_source",
+    "tests/test_check_assets.py::test_check_assets_rejects_unregistered_image",
+    "tests/test_check_assets.py::test_check_assets_rejects_image_outside_whitelist",
+    "tests/test_check_assets.py::test_check_assets_rejects_force_tracked_local",
+    "tests/test_check_assets.py::test_check_assets_rejects_uppercase_extension",
+    "tests/test_check_assets.py::test_check_assets_rejects_when_ls_files_fails",
+    "tests/test_check_assets.py::test_check_assets_rejects_png_renamed_to_bin",
+    "tests/test_check_assets.py::test_check_assets_rejects_signature_at_end_of_head",
+    "tests/test_check_assets.py::test_check_assets_rejects_new_extensions",
+    "tests/test_check_assets.py::test_check_assets_rejects_duplicate_registration",
+    "tests/test_check_assets.py::test_check_assets_rejects_registered_but_missing",
+    "tests/test_check_assets.py::test_sniff_signatures",
+    "tests/test_check_assets.py::test_repo_gitignore_covers_assets_local",
+    "tests/test_check_assets.py::test_check_assets_output_survives_cp1252",
+    "tests/test_mutation_gate.py::test_missing_snippet_exits_2",
+    "tests/test_mutation_gate.py::test_ambiguous_snippet_exits_2",
+    "tests/test_mutation_gate.py::test_survivor_exits_1",
+    "tests/test_mutation_gate.py::test_wrong_reason_exits_1",
+    "tests/test_mutation_gate.py::test_bad_test_id_exits_2",
+    "tests/test_mutation_gate.py::test_failing_baseline_exits_2",
+    "tests/test_mutation_gate.py::test_file_restored_after_each_mutant",
+    "tests/test_mutation_gate.py::test_mutant_breaking_import_is_error",
+    "tests/test_mutation_gate.py::test_empty_manifest_exits_2",
+    "tests/test_mutation_gate.py::test_missing_required_id_exits_2",
+    "tests/test_mutation_gate.py::test_manifest_without_required_ids_exits_2",
+    "tests/test_mutation_gate.py::test_mutant_not_in_required_ids_exits_2",
+    "tests/test_mutation_gate.py::test_guard_test_without_own_mutant_exits_2",
+    "tests/test_mutation_manifest.py::test_guard_named_tests_are_listed",
+    "tests/test_check_assets.py::test_sniff_bmp_accepts_other_dib_header_lengths",
+    "tests/test_check_assets.py::test_sniff_kra_returns_none_for_inexact_mimetype",
+    "tests/test_check_assets.py::test_check_assets_checks_deleted_tracked_file",
+    "tests/test_check_assets.py::test_check_assets_rejects_when_ls_files_fails_under_cp1252",
 ]
 
 [[mutant]]
@@ -55,6 +140,411 @@ replacement = "pass"
 kill = ["tests/test_core.py::test_channel_rejects_non_positive_maxsize"]
 expect = "DID NOT RAISE"
 why = "非法 maxsize 必须抛出 ValueError"
+
+[[mutant]]
+id = "bus-capacity-hardcoded"
+file = "src/bigfatfish/core/bus.py"
+original = "queue.Queue(maxsize=maxsize)"
+replacement = "queue.Queue(maxsize=1)"
+kill = ["tests/test_core.py::test_bus_capacity_matches_maxsize"]
+expect = "[True, False, False] == [True, True, False]"
+why = "容量写死"
+
+[[mutant]]
+id = "smoke-show"
+file = "src/bigfatfish/__main__.py"
+original = "    window.show()"
+replacement = "    pass"
+kill = ["tests/test_shell_smoke.py::test_smoke_exits_zero"]
+expect = "window is not visible"
+why = "不 show"
+
+[[mutant]]
+id = "smoke-load-placeholder"
+file = "src/bigfatfish/shell/window.py"
+original = "self._pixmap = QPixmap(str(_PLACEHOLDER))"
+replacement = "self._pixmap = QPixmap()"
+kill = ["tests/test_shell_smoke.py::test_smoke_exits_zero"]
+expect = "pixmap is empty"
+why = "不加载"
+
+[[mutant]]
+id = "smoke-render"
+file = "src/bigfatfish/shell/window.py"
+original = "label.setPixmap(self._pixmap)"
+replacement = "pass"
+kill = ["tests/test_shell_smoke.py::test_smoke_exits_zero"]
+expect = "grabbed frame has no pixel"
+why = "不渲染"
+
+[[mutant]]
+id = "smoke-stays-on-top"
+file = "src/bigfatfish/shell/window.py"
+original = "            | Qt.WindowType.WindowStaysOnTopHint\n"
+replacement = ""
+kill = ["tests/test_shell_smoke.py::test_window_is_frameless_translucent_and_stays_on_top"]
+expect = "& <WindowType.WindowStaysOnTopHint: 262144>) != 0"
+why = "去置顶"
+
+[[mutant]]
+id = "smoke-frameless"
+file = "src/bigfatfish/shell/window.py"
+original = "            | Qt.WindowType.FramelessWindowHint\n"
+replacement = ""
+kill = ["tests/test_shell_smoke.py::test_window_is_frameless_translucent_and_stays_on_top"]
+expect = "& <WindowType.FramelessWindowHint: 2048>) != 0"
+why = "去无边框"
+
+[[mutant]]
+id = "smoke-translucent"
+file = "src/bigfatfish/shell/window.py"
+original = "WA_TranslucentBackground, True)"
+replacement = "WA_TranslucentBackground, False)"
+kill = ["tests/test_shell_smoke.py::test_window_is_frameless_translucent_and_stays_on_top"]
+expect = "<WidgetAttribute.WA_TranslucentBackground: 120>"
+why = "去透明"
+
+[[mutant]]
+id = "smoke-fake-qlabel"
+file = "src/bigfatfish/__main__.py"
+original = "    window = ShellWindow()\n"
+replacement = "    from pathlib import Path as _Path\n    from PySide6.QtGui import QPixmap as _QPixmap\n    from PySide6.QtWidgets import QLabel as _QLabel\n    window = _QLabel()\n    _pix = _QPixmap(str(_Path(__file__).resolve().parents[2] / \"assets\" / \"placeholder\" / \"placeholder.png\"))\n    window.setPixmap(_pix)\n    if not _pix.isNull():\n        window.resize(_pix.size())\n"
+kill = ["tests/test_shell_smoke.py::test_smoke_frame_matches_placeholder"]
+expect = "frame differs from placeholder"
+why = "换成 QLabel 显示占位图，抓出来的帧和占位图不同"
+
+[[mutant]]
+id = "smoke-print-only"
+file = "src/bigfatfish/__main__.py"
+original = "    return _render_one_frame(frame_out)\n"
+replacement = "    print(\"SMOKE OK\")\n    return 0\n"
+kill = ["tests/test_shell_smoke.py::test_smoke_frame_matches_placeholder"]
+expect = "frame file missing"
+why = "不渲染，直接打印 SMOKE OK"
+
+[[mutant]]
+id = "smoke-no-checks-no-show"
+file = "src/bigfatfish/__main__.py"
+original = "    window.show()\n    app.processEvents()\n    if frame_out is not None:\n        image = window.grab().toImage()\n        if not image.save(frame_out):\n            print(f\"failed to write {frame_out}\", file=sys.stderr)\n            return 1\n    reasons: list[str] = []\n    if not window.isVisible():\n        reasons.append(\"window is not visible\")\n    if window.pixmap().isNull():\n        reasons.append(\"pixmap is empty\")\n    if not _has_visible_pixel(window.grab().toImage()):\n        reasons.append(\"grabbed frame has no pixel with alpha > 0\")\n    if reasons:\n        print(\"\\n\".join(reasons), file=sys.stderr)\n        return 1\n"
+replacement = "    app.processEvents()\n    if frame_out is not None:\n        image = window.grab().toImage()\n        if not image.save(frame_out):\n            print(f\"failed to write {frame_out}\", file=sys.stderr)\n            return 1\n"
+kill = ["tests/test_shell_smoke.py::test_smoke_frame_matches_placeholder"]
+expect = "frame differs from placeholder"
+why = "删掉 show 和全部自检"
+
+[[mutant]]
+id = "replay-skip-event"
+file = "src/bigfatfish/replay/play.py"
+original = "    for event in events:\n"
+replacement = "    for event in events[:-1]:\n"
+kill = ["tests/replay/test_replay_sample.py::test_replay_sample"]
+expect = "assert b'{\"t\": 0.0, "
+why = "跳过最后一个事件"
+
+[[mutant]]
+id = "replay-echo-golden"
+file = "src/bigfatfish/replay/__main__.py"
+original = "    text = \"\".join(f\"{line}\\n\" for line in render_trace(load_jsonl(fixture)))\n"
+replacement = "    text = (Path(__file__).resolve().parents[3] / \"tests\" / \"replay\" / \"golden\" / \"sample.jsonl\").read_text(encoding=\"utf-8\")\n"
+kill = ["tests/replay/test_replay_sample.py::test_replay_altered_fixture_does_not_match_golden"]
+expect = "' != b'{\"t\": 0.0, \"reflex\": "
+why = "照抄 golden"
+
+[[mutant]]
+id = "assets-skip-registration"
+file = "scripts/check_assets.py"
+original = "source = registry.get(path)"
+replacement = "source = registry.get(path, \"\u81ea\u5236\")"
+kill = ["tests/test_check_assets.py::test_check_assets_rejects_unregistered_image"]
+expect = "assert 0 != 0"
+why = "未登记当自制"
+
+[[mutant]]
+id = "assets-skip-directory"
+file = "scripts/check_assets.py"
+original = "if not path.startswith(_WHITELIST_PREFIXES):"
+replacement = "if False:"
+kill = ["tests/test_check_assets.py::test_check_assets_rejects_image_outside_whitelist"]
+expect = "assert 0 != 0"
+why = "不查目录"
+
+[[mutant]]
+id = "assets-worktree-only"
+file = "scripts/check_assets.py"
+original = "    tracked = _tracked_files(root)\n"
+replacement = "    tracked = [p.relative_to(root).as_posix() for p in root.rglob(\"*\") if p.is_file() and \".git\" not in p.relative_to(root).parts]\n"
+kill = ["tests/test_check_assets.py::test_check_assets_ignores_untracked_gitignored_local"]
+expect = "assert 1 == 0"
+why = "扫工作区"
+
+[[mutant]]
+id = "assets-skip-source"
+file = "scripts/check_assets.py"
+original = "elif source not in _SOURCES:"
+replacement = "elif False:"
+kill = ["tests/test_check_assets.py::test_check_assets_rejects_other_source"]
+expect = "assert 0 != 0"
+why = "A3"
+
+[[mutant]]
+id = "assets-widen-sources"
+file = "scripts/check_assets.py"
+original = "_SOURCES = frozenset({\"\u81ea\u5236\", \"\u7a0b\u5e8f\u751f\u6210\"})"
+replacement = "_SOURCES = frozenset({\"\u81ea\u5236\", \"\u7a0b\u5e8f\u751f\u6210\", \"\u4ed6\u4eba\"})"
+kill = ["tests/test_check_assets.py::test_check_assets_rejects_other_source"]
+expect = "assert 0 != 0"
+why = "A8"
+
+[[mutant]]
+id = "assets-case-sensitive-ext"
+file = "scripts/check_assets.py"
+original = "Path(path).suffix.lower() not in"
+replacement = "Path(path).suffix not in"
+kill = ["tests/test_check_assets.py::test_check_assets_rejects_uppercase_extension"]
+expect = "assert 0 != 0"
+why = "A6"
+
+[[mutant]]
+id = "assets-ignore-git-failure"
+file = "scripts/check_assets.py"
+original = "        sys.stderr.buffer.write(result.stderr)\n        raise SystemExit(result.returncode)\n"
+replacement = "        return []\n"
+kill = ["tests/test_check_assets.py::test_check_assets_rejects_when_ls_files_fails"]
+expect = "assert 0 != 0"
+why = "A11"
+
+[[mutant]]
+id = "replay-fist-no-nod"
+file = "src/bigfatfish/reflex/state.py"
+original = "_NOD_KINDS = frozenset({\"Thumb_Up\"})"
+replacement = "_NOD_KINDS = frozenset({\"Closed_Fist\", \"Thumb_Up\"})"
+kill = ["tests/test_reflex_nod.py::test_closed_fist_does_not_nod_and_thumb_up_does"]
+expect = "assert True is False"
+why = "握拳又点头"
+
+[[mutant]]
+id = "net-addopts-off-connect"
+file = "pyproject.toml"
+original = "addopts = [\"--disable-socket\"]"
+replacement = "addopts = []"
+kill = ["tests/test_no_network.py::test_create_connection_is_blocked"]
+expect = "Failed: DID NOT WARN"
+why = "去掉断网守卫"
+
+[[mutant]]
+id = "net-addopts-off-socket"
+file = "pyproject.toml"
+original = "addopts = [\"--disable-socket\"]"
+replacement = "addopts = []"
+kill = ["tests/test_no_network.py::test_socket_constructor_is_blocked"]
+expect = "DID NOT RAISE SocketBlockedError"
+why = "去掉断网守卫"
+
+[[mutant]]
+id = "assets-skip-local"
+file = "scripts/check_assets.py"
+original = "    return [item for item in result.stdout.decode(\"utf-8\").split(\"\\0\") if item]"
+replacement = "    return [item for item in result.stdout.decode(\"utf-8\").split(\"\\0\") if item and not item.startswith(\"assets/local/\")]"
+kill = ["tests/test_check_assets.py::test_check_assets_rejects_force_tracked_local"]
+expect = "assert 0 != 0"
+why = "跳过 assets/local/"
+
+[[mutant]]
+id = "assets-head-window"
+file = "scripts/check_assets.py"
+original = "        return handle.read(1024)"
+replacement = "        return handle.read(1020)"
+kill = ["tests/test_check_assets.py::test_check_assets_rejects_signature_at_end_of_head"]
+expect = "assert 0 != 0"
+why = "文件头只读 1020 字节"
+
+[[mutant]]
+id = "assets-suffix-table-off"
+file = "scripts/check_assets.py"
+original = "        if Path(path).suffix.lower() not in _ASSET_SUFFIXES:"
+replacement = "        if True:"
+kill = ["tests/test_check_assets.py::test_check_assets_rejects_new_extensions"]
+expect = "assert 0 != 0"
+why = "不看扩展名表"
+
+[[mutant]]
+id = "assets-sniff-unit-off"
+file = "scripts/check_assets.py"
+original = "def _sniff(head: bytes) -> str | None:"
+replacement = "def _sniff(head: bytes) -> str | None:\n    return None"
+kill = ["tests/test_check_assets.py::test_sniff_signatures"]
+expect = "assert None == 'PNG'"
+why = "关掉文件头识别（单测）"
+
+[[mutant]]
+id = "repo-gitignore-local-off"
+file = ".gitignore"
+original = "assets/local/\n"
+replacement = ""
+kill = ["tests/test_check_assets.py::test_repo_gitignore_covers_assets_local"]
+expect = "assert 'assets/local/' in ["
+why = "去掉 .gitignore 的 assets/local/"
+
+[[mutant]]
+id = "gate-snippet-missing-ok"
+file = "scripts/mutation_gate.py"
+original = "if count == 1:"
+replacement = "if count <= 1:"
+kill = ["tests/test_mutation_gate.py::test_missing_snippet_exits_2"]
+expect = "AssertionError: assert 1 == 2"
+why = "片段缺失放行"
+
+[[mutant]]
+id = "gate-snippet-ambiguous-ok"
+file = "scripts/mutation_gate.py"
+original = "if count == 1:"
+replacement = "if count >= 1:"
+kill = ["tests/test_mutation_gate.py::test_ambiguous_snippet_exits_2"]
+expect = "AssertionError: assert 0 == 2"
+why = "片段重复放行"
+
+[[mutant]]
+id = "gate-survivor-off"
+file = "scripts/mutation_gate.py"
+original = "    if code == 0:\n        print(f\"SURVIVED {mutant.id}\")"
+replacement = "    if False:\n        print(f\"SURVIVED {mutant.id}\")"
+kill = ["tests/test_mutation_gate.py::test_survivor_exits_1"]
+expect = "AssertionError: assert 2 == 1"
+why = "不判存活"
+
+[[mutant]]
+id = "gate-expect-off"
+file = "scripts/mutation_gate.py"
+original = "if code == 1 and mutant.expect in output:"
+replacement = "if code == 1:"
+kill = ["tests/test_mutation_gate.py::test_wrong_reason_exits_1"]
+expect = "AssertionError: assert 0 == 1"
+why = "不查 expect"
+
+[[mutant]]
+id = "gate-baseline-off-bad-id"
+file = "scripts/mutation_gate.py"
+original = "    if _baseline_failed(root, mutants, parsed.hang_guard):"
+replacement = "    if False:"
+kill = ["tests/test_mutation_gate.py::test_bad_test_id_exits_2"]
+expect = "assert 'baseline failed' in"
+why = "不跑基线（坏 node id）"
+
+[[mutant]]
+id = "gate-baseline-off"
+file = "scripts/mutation_gate.py"
+original = "    if _baseline_failed(root, mutants, parsed.hang_guard):"
+replacement = "    if False:"
+kill = ["tests/test_mutation_gate.py::test_failing_baseline_exits_2"]
+expect = "AssertionError: assert 1 == 2"
+why = "不跑基线"
+
+[[mutant]]
+id = "gate-restore-off"
+file = "scripts/mutation_gate.py"
+original = "        path.write_bytes(original)\n        restored"
+replacement = "        restored"
+kill = ["tests/test_mutation_gate.py::test_file_restored_after_each_mutant"]
+expect = "+ mutation gate: 0 killed, 0 survived, 0 wrong reason, 3 errors"
+why = "不写回原文"
+
+[[mutant]]
+id = "gate-error-as-killed"
+file = "scripts/mutation_gate.py"
+original = "    print(f\"ERROR {mutant.id}: pytest exited {code}\")\n    return \"error\""
+replacement = "    print(f\"KILLED {mutant.id}\")\n    return \"killed\""
+kill = ["tests/test_mutation_gate.py::test_mutant_breaking_import_is_error"]
+expect = "assert 'ERROR breaks-import' in"
+why = "ERROR 判成 KILLED"
+
+[[mutant]]
+id = "gate-empty-check-off"
+file = "scripts/mutation_gate.py"
+original = "    if not mutants:\n"
+replacement = "    if False:\n"
+kill = ["tests/test_mutation_gate.py::test_empty_manifest_exits_2"]
+expect = "assert 'manifest has no mutants' in"
+why = "不查空清单"
+
+[[mutant]]
+id = "gate-missing-id-off"
+file = "scripts/mutation_gate.py"
+original = "    if missing:\n        return f\"required mutant missing"
+replacement = "    if False:\n        return f\"required mutant missing"
+kill = ["tests/test_mutation_gate.py::test_missing_required_id_exits_2"]
+expect = "AssertionError: assert 0 == 2"
+why = "不查缺 id"
+
+[[mutant]]
+id = "gate-no-required-off"
+file = "scripts/mutation_gate.py"
+original = "    if required_ids is None:"
+replacement = "    if False:"
+kill = ["tests/test_mutation_gate.py::test_manifest_without_required_ids_exits_2"]
+expect = "AssertionError: assert 1 == 2"
+why = "不查 required_ids 键"
+
+[[mutant]]
+id = "gate-extra-id-off"
+file = "scripts/mutation_gate.py"
+original = "        if mutant.id not in required:"
+replacement = "        if False:"
+kill = ["tests/test_mutation_gate.py::test_mutant_not_in_required_ids_exits_2"]
+expect = "AssertionError: assert 1 == 2"
+why = "不查多出的 id"
+
+[[mutant]]
+id = "gate-guard-check-off"
+file = "scripts/mutation_gate.py"
+original = "        if guard not in owned:"
+replacement = "        if False:"
+kill = ["tests/test_mutation_gate.py::test_guard_test_without_own_mutant_exits_2"]
+expect = "AssertionError: assert 0 == 2"
+why = "不查守卫用例自有变异体"
+
+[[mutant]]
+id = "manifest-guard-entry-off"
+file = "tests/mutations.toml"
+original = "    \"tests/test_core.py::test_channel_rejects_non_positive_maxsize\",\n"
+replacement = ""
+kill = ["tests/test_mutation_manifest.py::test_guard_named_tests_are_listed"]
+expect = "Left contains one more item: 'tests/test_core.py::test_channel_rejects_non_positive_maxsize'"
+why = "guard_tests 漏列一条"
+
+[[mutant]]
+id = "assets-bmp-dib-sizes-off"
+file = "scripts/check_assets.py"
+original = "    return size in {12, 40, 52, 56, 64, 108, 124}"
+replacement = "    return size in {40}"
+kill = ["tests/test_check_assets.py::test_sniff_bmp_accepts_other_dib_header_lengths"]
+expect = "AssertionError: assert None == 'BMP'"
+why = "DIB 头长度只留 40"
+
+[[mutant]]
+id = "assets-kra-mime-loose"
+file = "scripts/check_assets.py"
+original = "and head[38:57] == b\"application/x-krita\""
+replacement = "and b\"application/x-krita\" in head"
+kill = ["tests/test_check_assets.py::test_sniff_kra_returns_none_for_inexact_mimetype"]
+expect = "AssertionError: assert 'KRA' is None"
+why = "KRA mimetype 改成子串包含"
+
+[[mutant]]
+id = "assets-read-head-guard-off"
+file = "scripts/check_assets.py"
+original = "    if not path.is_file():\n        return b\"\"\n"
+replacement = ""
+kill = ["tests/test_check_assets.py::test_check_assets_checks_deleted_tracked_file"]
+expect = "assert 'Traceback' not in"
+why = "删掉文件不存在时返回空头"
+
+[[mutant]]
+id = "assets-lsfiles-msg-print"
+file = "scripts/check_assets.py"
+original = "        _write_utf8(\n            f\"git ls-files \u5931\u8d25\uff08\u9000\u51fa\u7801 {result.returncode}\uff09\",\n            sys.stderr,\n        )\n"
+replacement = "        print(f\"git ls-files \u5931\u8d25\uff08\u9000\u51fa\u7801 {result.returncode}\uff09\", file=sys.stderr)\n"
+kill = ["tests/test_check_assets.py::test_check_assets_rejects_when_ls_files_fails_under_cp1252"]
+expect = "git ls-files \\\\u5931\\\\u8d25"
+why = "ls-files 失败提示改成 print 到 stderr"
 
 [[mutant]]
 id = "hard-sniff-off"

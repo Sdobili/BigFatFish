@@ -264,6 +264,8 @@ def test_bad_test_id_exits_2(tmp_path: Path) -> None:
     )
     result = _run(tmp_path)
     assert result.returncode == 2
+    assert "baseline failed" in result.stdout
+    assert "ERROR missing-test" not in result.stdout
 
 
 def test_failing_baseline_exits_2(tmp_path: Path) -> None:
@@ -507,4 +509,43 @@ def test_mutant_not_in_required_ids_exits_2(tmp_path: Path) -> None:
     result = _run(tmp_path)
     assert result.returncode == 2
     assert "mutant not in required_ids: extra" in result.stdout
+    assert "KILLED" not in result.stdout
+
+
+def test_guard_test_without_own_mutant_exits_2(tmp_path: Path) -> None:
+    _project(
+        tmp_path,
+        _VALUE_SOURCE,
+        _src(
+            """
+            from sample import value
+
+
+            def test_value() -> None:
+                assert value() == 1
+
+
+            def test_other() -> None:
+                assert value() == 1
+            """
+        ),
+        'guard_tests = ["tests/test_sample.py::test_value"]\n\n'
+        + _mutant(
+            mutant_id="shared",
+            original="return 1",
+            replacement="return 2",
+            kill="tests/test_sample.py::test_value",
+            expect="assert 2 == 1",
+        ).replace(
+            'kill = ["tests/test_sample.py::test_value"]',
+            'kill = ["tests/test_sample.py::test_value", '
+            '"tests/test_sample.py::test_other"]',
+        ),
+    )
+    result = _run(tmp_path)
+    assert result.returncode == 2
+    assert (
+        "guard test has no own mutant: tests/test_sample.py::test_value"
+        in result.stdout
+    )
     assert "KILLED" not in result.stdout

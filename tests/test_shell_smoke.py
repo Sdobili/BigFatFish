@@ -13,6 +13,17 @@ _PLACEHOLDER = (
 # Hang guard only, same role as the one-second join in test_bus_never_blocks.
 # The assertion is the process exit code, not elapsed time.
 _SMOKE_HANG_GUARD_SECONDS = 60.0
+_FRAME_FILE_MISSING = "frame file missing"
+_FRAME_DIFFERS = "frame differs from placeholder"
+
+
+def _straight_argb32(image: object) -> object:
+    from PySide6.QtGui import QImage
+
+    if not isinstance(image, QImage):
+        raise TypeError("expected a QImage")
+    premultiplied = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+    return premultiplied.convertToFormat(QImage.Format.Format_ARGB32)
 
 
 def test_window_is_frameless_translucent_and_stays_on_top(qtbot: QtBot) -> None:
@@ -60,3 +71,55 @@ def test_smoke_exits_zero() -> None:
         stdout, stderr = proc.communicate()
     assert proc.returncode == 0, stderr
     assert b"SMOKE OK" in stdout, stdout
+
+
+def test_smoke_frame_matches_placeholder(tmp_path: Path, qapp: object) -> None:
+    from PySide6.QtGui import QImage
+
+    _ = qapp
+    frame = tmp_path / "frame.png"
+    env = os.environ.copy()
+    env["QT_QPA_PLATFORM"] = "offscreen"
+    proc = subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "bigfatfish",
+            "--smoke",
+            "--frame-out",
+            str(frame),
+        ],
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    try:
+        _stdout, _stderr = proc.communicate(timeout=_SMOKE_HANG_GUARD_SECONDS)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        _stdout, _stderr = proc.communicate()
+    assert frame.is_file(), _FRAME_FILE_MISSING
+    grabbed = QImage(str(frame))
+    expected = QImage(str(_PLACEHOLDER))
+    assert grabbed.size() == expected.size()
+    # Grab stores premultiplied pixels. Converting back is off by 1 on some
+    # edges, so both images take the same round trip before ==.
+    left = _straight_argb32(grabbed)
+    right = _straight_argb32(expected)
+    if left != right:
+        diffs = 0
+        sample = ""
+        for y in range(left.height()):
+            for x in range(left.width()):
+                if left.pixel(x, y) != right.pixel(x, y):
+                    diffs += 1
+                    if sample == "":
+                        sample = (
+                            f"{x},{y}:{left.pixel(x, y):08x}/{right.pixel(x, y):08x}"
+                        )
+        print(
+            f"frame diff count={diffs} sample={sample} "
+            f"grabbed={grabbed.format()} expected={expected.format()}",
+            file=sys.stderr,
+        )
+    assert left == right, _FRAME_DIFFERS

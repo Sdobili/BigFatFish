@@ -201,6 +201,29 @@ def test_check_assets_rejects_when_ls_files_fails(tmp_path: Path) -> None:
     assert "OK" not in result.stdout.splitlines()
 
 
+def test_check_assets_rejects_when_ls_files_fails_under_cp1252(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    (repo / "README").write_text("ok\n", encoding="utf-8")
+    _git(repo, "add", "README")
+    _git(repo, "commit", "-m", "init")
+    bad_index = repo / "bad-index"
+    bad_index.write_bytes(b"not-an-index")
+
+    result = _run(
+        repo,
+        extra_env={
+            "GIT_INDEX_FILE": str(bad_index),
+            "PYTHONIOENCODING": "cp1252",
+            "PYTHONUTF8": "0",
+        },
+    )
+    assert f"git ls-files 失败（退出码 {result.returncode}）" in result.stderr
+    assert result.returncode != 0
+    assert "Traceback" not in result.stderr
+    assert "OK" not in result.stdout.splitlines()
+
+
 def test_check_assets_accepts_registered_assets(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _init_repo(repo)
