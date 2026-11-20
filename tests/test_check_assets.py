@@ -158,7 +158,7 @@ def test_check_assets_rejects_when_ls_files_fails(tmp_path: Path) -> None:
     bad_index.write_bytes(b"not-an-index")
 
     result = _run(repo, extra_env={"GIT_INDEX_FILE": str(bad_index)})
-    assert "index file" in result.stderr
+    assert "git ls-files 失败" in result.stderr
     assert result.returncode != 0
     assert "OK" not in result.stdout.splitlines()
 
@@ -256,6 +256,52 @@ def test_check_assets_rejects_new_extensions(tmp_path: Path, suffix: str) -> Non
     result = _run(repo)
     combined = result.stdout + result.stderr
     assert f"{relative}: 未在 ASSETS.md 登记" in combined
+    assert result.returncode != 0
+    assert "OK" not in result.stdout.splitlines()
+
+
+@pytest.mark.parametrize("sources", [("他人", "自制"), ("自制", "他人")])
+def test_check_assets_rejects_duplicate_registration(
+    tmp_path: Path, sources: tuple[str, str]
+) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    image = repo / "assets" / "own" / "x.png"
+    image.parent.mkdir(parents=True)
+    image.write_bytes(_png())
+    first, second = sources
+    (repo / "ASSETS.md").write_text(
+        _registry(
+            [
+                ("assets/own/x.png", first, "first"),
+                ("assets/own/x.png", second, "second"),
+            ]
+        ),
+        encoding="utf-8",
+    )
+    _git(repo, "add", "ASSETS.md", "assets/own/x.png")
+    _git(repo, "commit", "-m", "register one path twice")
+
+    result = _run(repo)
+    combined = result.stdout + result.stderr
+    assert "assets/own/x.png: ASSETS.md 重复登记" in combined
+    assert result.returncode != 0
+    assert "OK" not in result.stdout.splitlines()
+
+
+def test_check_assets_rejects_registered_but_missing(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    (repo / "ASSETS.md").write_text(
+        _registry([("assets/own/gone.png", "自制", "not in the tree")]),
+        encoding="utf-8",
+    )
+    _git(repo, "add", "ASSETS.md")
+    _git(repo, "commit", "-m", "register a missing file")
+
+    result = _run(repo)
+    combined = result.stdout + result.stderr
+    assert "assets/own/gone.png: 在 ASSETS.md 登记，但不在 git 跟踪的文件里" in combined
     assert result.returncode != 0
     assert "OK" not in result.stdout.splitlines()
 
