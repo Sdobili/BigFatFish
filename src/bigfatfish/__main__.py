@@ -23,15 +23,22 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if not args.smoke:
         parser.error("missing --smoke")
-    print("SMOKE OK")
-    return 0
+    frame_out = args.frame_out
+    if not isinstance(frame_out, str):
+        frame_out = None
+    return _render_one_frame(frame_out)
 
 
-def _render_one_frame() -> int:
+def _render_one_frame(frame_out: str | None) -> int:
     app = QApplication([])
     window = ShellWindow()
     window.show()
     app.processEvents()
+    if frame_out is not None:
+        image = window.grab().toImage()
+        if not image.save(frame_out):
+            print(f"failed to write {frame_out}", file=sys.stderr)
+            return 1
     reasons: list[str] = []
     if not window.isVisible():
         reasons.append("window is not visible")
