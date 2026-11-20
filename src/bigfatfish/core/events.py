@@ -10,19 +10,23 @@ class GestureEvent:
     kind: str
     hand: str
     landmarks: tuple[tuple[float, ...], ...] | None = None
+    score: float | None = None
 
     def to_dict(self) -> dict[str, object]:
         if self.landmarks is None:
             landmarks: object = None
         else:
             landmarks = [list(point) for point in self.landmarks]
-        return {
+        payload = {
             "type": "gesture",
             "t": self.t,
             "kind": self.kind,
             "hand": self.hand,
             "landmarks": landmarks,
         }
+        if self.score is not None:
+            payload["score"] = self.score
+        return payload
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,7 +47,39 @@ class Status:
         return {"type": "status", "t": self.t, "kind": self.kind}
 
 
-Event = GestureEvent | Intent | Status
+@dataclass(frozen=True, slots=True)
+class Tick:
+    t: float
+
+    def to_dict(self) -> dict[str, object]:
+        return {"type": "tick", "t": self.t}
+
+
+@dataclass(frozen=True, slots=True)
+class Observation:
+    t: float
+    window_title: str
+    text: str
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "type": "observation",
+            "t": self.t,
+            "window_title": self.window_title,
+            "text": self.text,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class ProposalReady:
+    t: float
+    text: str
+
+    def to_dict(self) -> dict[str, object]:
+        return {"type": "proposal", "t": self.t, "text": self.text}
+
+
+Event = GestureEvent | Intent | Status | Tick | Observation | ProposalReady
 
 
 def load_event(data: Mapping[str, object]) -> Event:

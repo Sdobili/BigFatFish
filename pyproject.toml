@@ -32,6 +32,7 @@ addopts = ["--disable-socket"]
 testpaths = ["tests"]
 markers = [
     "replay: replay recorded GestureEvent fixtures against golden traces",
+    "live: needs network, camera, model or key; skipped unless --live",
 ]
 
 [tool.ruff]

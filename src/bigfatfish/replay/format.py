@@ -4,7 +4,15 @@ import json
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 
-from bigfatfish.core.events import GestureEvent, load_event
+from bigfatfish.core.events import (
+    GestureEvent,
+    Observation,
+    ProposalReady,
+    Tick,
+    load_event,
+)
+
+SessionEvent = GestureEvent | Tick | Observation | ProposalReady
 
 SCHEMA = "v1"
 
@@ -40,6 +48,16 @@ def _load_line(line: str, line_number: int) -> GestureEvent:
     if not isinstance(event, GestureEvent):
         raise ValueError(f"line {line_number}: expected a gesture event")
     return event
+
+
+def write_session(path: Path, events: Iterable[SessionEvent]) -> None:
+    del events
+    path.write_text("", encoding="utf-8", newline="\n")
+
+
+def load_session(path: Path) -> list[SessionEvent]:
+    del path
+    return []
 
 
 def _as_object_dict(value: object, line_number: int) -> dict[str, object]:
