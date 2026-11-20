@@ -58,6 +58,11 @@ required_ids = [
     "r1-score-gate-off",
     "r1-hand-case",
     "r1-live-not-skipped",
+    "r1-wave-reversals",
+    "r1-wave-window",
+    "r1-hold-boundary",
+    "r1-hold-zero",
+    "r1-score-threshold-off",
 ]
 
 guard_tests = [
@@ -632,3 +637,48 @@ replacement = "if False:"
 kill = ["tests/live/test_qwen_smoke.py::test_qwen_chat_completion"]
 expect = "QWEN_API_KEY 或 QWEN_BASE_URL 未设置"
 why = "没传 --live 也跑 live 测试，缺变量必须失败"
+
+[[mutant]]
+id = "r1-wave-reversals"
+file = "src/bigfatfish/perception/wave.py"
+original = "_MIN_REVERSALS = 2"
+replacement = "_MIN_REVERSALS = 1"
+kill = ["tests/perception/test_wave.py::test_single_swipe_is_not_wave"]
+expect = "single swipe is not a wave"
+why = "一次反转也当成挥手"
+
+[[mutant]]
+id = "r1-wave-window"
+file = "src/bigfatfish/perception/wave.py"
+original = "_WINDOW_S = 1.5"
+replacement = "_WINDOW_S = 1e9"
+kill = ["tests/perception/test_wave.py::test_slow_reversals_are_not_wave"]
+expect = "slow reversals are not a wave"
+why = "挥手窗口被放得无限大"
+
+[[mutant]]
+id = "r1-hold-boundary"
+file = "src/bigfatfish/agent/loop.py"
+original = "held >= _HOLD_S[kind]"
+replacement = "held > _HOLD_S[kind]"
+kill = ["tests/agent/test_hold.py::test_hold_exactly_at_threshold_fires"]
+expect = "hold at threshold must fire"
+why = "保持时长正好等于阈值时不触发"
+
+[[mutant]]
+id = "r1-hold-zero"
+file = "src/bigfatfish/agent/loop.py"
+original = "\"Thumb_Up\": 0.5,"
+replacement = "\"Thumb_Up\": 0.0,"
+kill = ["tests/agent/test_hold.py::test_thumb_up_short_hold_ignored"]
+expect = "short hold must not confirm"
+why = "点赞不用保持"
+
+[[mutant]]
+id = "r1-score-threshold-off"
+file = "src/bigfatfish/core/gestures.py"
+original = "if ev.score is not None and ev.score < min_score:"
+replacement = "if False:"
+kill = ["tests/agent/test_hold.py::test_low_score_breaks_hold"]
+expect = "low score must break hold"
+why = "低于阈值的分数仍算有效手势"
