@@ -107,11 +107,20 @@ def _with_required_ids(manifest: str) -> str:
     return f"required_ids = [{rendered}]\n\n{manifest}"
 
 
-def _project(tmp_path: Path, source: str, test: str, manifest: str) -> Path:
+def _project(
+    tmp_path: Path,
+    source: str,
+    test: str,
+    manifest: str,
+    *,
+    fill_required_ids: bool = True,
+) -> Path:
     source_path = tmp_path / "sample.py"
     _write(source_path, source)
     _write(tmp_path / "tests" / "test_sample.py", test)
-    _write(tmp_path / "tests" / "mutations.toml", _with_required_ids(manifest))
+    if fill_required_ids:
+        manifest = _with_required_ids(manifest)
+    _write(tmp_path / "tests" / "mutations.toml", manifest)
     return source_path
 
 
@@ -401,7 +410,7 @@ def test_mutant_breaking_import_is_error(tmp_path: Path) -> None:
             original="return 1",
             replacement="return (",
             kill="tests/test_sample.py::test_value",
-            expect="syntax",
+            expect="SyntaxError",
         ),
     )
     before = source.read_bytes()
@@ -441,4 +450,61 @@ def test_missing_required_id_exits_2(tmp_path: Path) -> None:
     result = _run(tmp_path)
     assert result.returncode == 2
     assert "required mutant missing: gone" in result.stdout
+    assert "KILLED" not in result.stdout
+
+
+def test_manifest_without_required_ids_exits_2(tmp_path: Path) -> None:
+    _project(
+        tmp_path,
+        _VALUE_SOURCE,
+        _VALUE_PASSES,
+        _mutant(
+            mutant_id="dies",
+            original="return 1",
+            replacement="return 2",
+            kill="tests/test_sample.py::test_value",
+            expect="assert 2 == 1",
+        ),
+        fill_required_ids=False,
+    )
+    result = _run(tmp_path)
+    assert result.returncode == 2
+    assert "manifest has no required_ids list" in result.stdout
+    assert "KILLED" not in result.stdout
+
+
+def test_mutant_not_in_required_ids_exits_2(tmp_path: Path) -> None:
+    _project(
+        tmp_path,
+        _src(
+            """
+            def value() -> int:
+                return 1
+
+
+            def extra() -> int:
+                return 3
+            """
+        ),
+        _VALUE_PASSES,
+        'required_ids = ["dies"]\n\n'
+        + _mutant(
+            mutant_id="dies",
+            original="return 1",
+            replacement="return 2",
+            kill="tests/test_sample.py::test_value",
+            expect="assert 2 == 1",
+        )
+        + "\n"
+        + _mutant(
+            mutant_id="extra",
+            original="return 3",
+            replacement="return 4",
+            kill="tests/test_sample.py::test_value",
+            expect="assert 4 == 3",
+        ),
+    )
+    result = _run(tmp_path)
+    assert result.returncode == 2
+    assert "mutant not in required_ids: extra" in result.stdout
     assert "KILLED" not in result.stdout
