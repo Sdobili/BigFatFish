@@ -12,7 +12,7 @@ id = "bus-full-returns-false"
 file = "src/bigfatfish/core/bus.py"
 original = "            return False"
 replacement = "            return True"
-kill = ["tests/test_core.py::test_channel_rejects_non_positive_maxsize"]
+kill = ["tests/test_core.py::test_bus_never_blocks"]
 expect = "[True] == [False]"
 why = "队列满时必须返回 False，否则丢弃被当成写入成功"
 
