@@ -1,17 +1,22 @@
 """Patch each manifest mutant, require the expected failure, then restore."""
 
 import argparse
+import atexit
 import hashlib
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 _TAIL_LINES = 20
+_PYC_DIR: str | None = None
+_NEXT_MTIME = 0.0
 
 
 @dataclass(frozen=True)
@@ -288,12 +293,14 @@ def _one_mutant(root: Path, mutant: Mutant, hang_guard: float) -> str:
         1,
     )
     path.write_bytes(patched)
+    _bump_mtime(path)
     outcome = "error"
     try:
         code, output = _pytest(root, list(mutant.kill), hang_guard)
         outcome = _judge(mutant, code, output)
     finally:
         path.write_bytes(original)
+        _bump_mtime(path)
         restored = hashlib.sha256(path.read_bytes()).digest()
         if restored != hashlib.sha256(original).digest():
             print(f"ERROR {mutant.id}: restore sha256 mismatch")
@@ -329,37 +336,55 @@ def _pytest(
     root: Path, node_ids: list[str], hang_guard: float
 ) -> tuple[int | None, str]:
     env = os.environ.copy()
-    env["PYTHONDONTWRITEBYTECODE"] = "1"
     env["BIGFATFISH_HYPOTHESIS_PROFILE"] = "gate"
-    # A same-length write in the same second must not reuse the baseline .pyc.
-    with tempfile.TemporaryDirectory(prefix="mutation-pyc-") as cache:
-        env["PYTHONPYCACHEPREFIX"] = cache
-        proc = subprocess.Popen(
-            [
-                sys.executable,
-                "-m",
-                "pytest",
-                "-q",
-                "-p",
-                "no:cacheprovider",
-                *node_ids,
-            ],
-            cwd=root,
-            env=env,
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-        try:
-            raw, _ = proc.communicate(timeout=hang_guard)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            raw, _ = proc.communicate()
-            return None, _decode(raw)
+    # One cache for the whole run so pytest's own bytecode is reused.
+    # The patched file's mtime is moved forward, so a same-length write
+    # cannot reuse the previous .pyc. Shell tests still load pytest-qt.
+    env["PYTHONPYCACHEPREFIX"] = _pyc_prefix()
+    command = [
+        sys.executable,
+        "-m",
+        "pytest",
+        "-q",
+        "-p",
+        "no:cacheprovider",
+    ]
+    if not any("test_shell_smoke.py" in node_id for node_id in node_ids):
+        command.extend(["-p", "no:pytestqt"])
+    command.extend(node_ids)
+    proc = subprocess.Popen(
+        command,
+        cwd=root,
+        env=env,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    try:
+        raw, _ = proc.communicate(timeout=hang_guard)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        raw, _ = proc.communicate()
+        return None, _decode(raw)
     code = proc.returncode
     if code is None:
         return None, _decode(raw)
     return code, _decode(raw)
+
+
+def _pyc_prefix() -> str:
+    global _PYC_DIR
+    if _PYC_DIR is None:
+        directory = tempfile.mkdtemp(prefix="mutation-pyc-")
+        atexit.register(shutil.rmtree, directory, True)
+        _PYC_DIR = directory
+    return _PYC_DIR
+
+
+def _bump_mtime(path: Path) -> None:
+    global _NEXT_MTIME
+    _NEXT_MTIME = max(_NEXT_MTIME + 1, time.time() + 1)
+    os.utime(path, (_NEXT_MTIME, _NEXT_MTIME))
 
 
 def _decode(raw: bytes | None) -> str:
