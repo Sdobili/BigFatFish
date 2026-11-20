@@ -13,6 +13,8 @@ _PLACEHOLDER = (
 # Hang guard only, same role as the one-second join in test_bus_never_blocks.
 # The assertion is the process exit code, not elapsed time.
 _SMOKE_HANG_GUARD_SECONDS = 60.0
+_FRAME_FILE_MISSING = "frame file missing"
+_FRAME_DIFFERS = "frame differs from placeholder"
 
 
 def test_window_is_frameless_translucent_and_stays_on_top(qtbot: QtBot) -> None:
@@ -60,3 +62,37 @@ def test_smoke_exits_zero() -> None:
         stdout, stderr = proc.communicate()
     assert proc.returncode == 0, stderr
     assert b"SMOKE OK" in stdout, stdout
+
+
+def test_smoke_frame_matches_placeholder(tmp_path: Path, qapp: object) -> None:
+    from PySide6.QtGui import QImage
+
+    _ = qapp
+    frame = tmp_path / "frame.png"
+    env = os.environ.copy()
+    env["QT_QPA_PLATFORM"] = "offscreen"
+    proc = subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "bigfatfish",
+            "--smoke",
+            "--frame-out",
+            str(frame),
+        ],
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    try:
+        _stdout, _stderr = proc.communicate(timeout=_SMOKE_HANG_GUARD_SECONDS)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        _stdout, _stderr = proc.communicate()
+    assert frame.is_file(), _FRAME_FILE_MISSING
+    grabbed = QImage(str(frame))
+    expected = QImage(str(_PLACEHOLDER))
+    assert grabbed.size() == expected.size()
+    assert grabbed.convertToFormat(
+        QImage.Format.Format_ARGB32
+    ) == expected.convertToFormat(QImage.Format.Format_ARGB32), _FRAME_DIFFERS
