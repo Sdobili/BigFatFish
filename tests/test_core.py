@@ -57,3 +57,13 @@ def test_event_roundtrip() -> None:
     for event in events:
         payload = json.dumps(event.to_dict())
         assert load_event(json.loads(payload)) == event
+
+
+def test_channel_get_nowait_returns_item_then_none() -> None:
+    from bigfatfish.core.bus import Channel
+
+    channel = Channel(maxsize=1)
+    assert channel.get_nowait() is None
+    assert channel.put_nowait("kept") is True
+    assert channel.get_nowait() == "kept"
+    assert channel.get_nowait() is None

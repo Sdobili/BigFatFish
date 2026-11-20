@@ -20,3 +20,9 @@ class Channel(Generic[T]):
         except queue.Full:
             return False
         return True
+
+    def get_nowait(self) -> T | None:
+        try:
+            return self._items.get_nowait()
+        except queue.Empty:
+            return None
