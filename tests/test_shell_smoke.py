@@ -17,6 +17,15 @@ _FRAME_FILE_MISSING = "frame file missing"
 _FRAME_DIFFERS = "frame differs from placeholder"
 
 
+def _straight_argb32(image: object) -> object:
+    from PySide6.QtGui import QImage
+
+    if not isinstance(image, QImage):
+        raise TypeError("expected a QImage")
+    premultiplied = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+    return premultiplied.convertToFormat(QImage.Format.Format_ARGB32)
+
+
 def test_window_is_frameless_translucent_and_stays_on_top(qtbot: QtBot) -> None:
     from PySide6.QtCore import Qt
 
@@ -93,8 +102,10 @@ def test_smoke_frame_matches_placeholder(tmp_path: Path, qapp: object) -> None:
     grabbed = QImage(str(frame))
     expected = QImage(str(_PLACEHOLDER))
     assert grabbed.size() == expected.size()
-    left = grabbed.convertToFormat(QImage.Format.Format_ARGB32)
-    right = expected.convertToFormat(QImage.Format.Format_ARGB32)
+    # Grab stores premultiplied pixels. Converting back is off by 1 on some
+    # edges, so both images take the same round trip before ==.
+    left = _straight_argb32(grabbed)
+    right = _straight_argb32(expected)
     if left != right:
         diffs = 0
         sample = ""
