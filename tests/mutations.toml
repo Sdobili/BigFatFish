@@ -1,10 +1,18 @@
+required_ids = [
+    "bus-put-nonblocking",
+    "bus-full-returns-false",
+    "bus-maxsize-bounded",
+    "bus-maxsize-check-bound",
+    "bus-maxsize-check-raise",
+]
+
 [[mutant]]
 id = "bus-put-nonblocking"
 file = "src/bigfatfish/core/bus.py"
 original = "self._items.put_nowait(ev)"
 replacement = "self._items.put(ev)"
 kill = ["tests/test_core.py::test_bus_never_blocks"]
-expect = "is_alive"
+expect = "assert not True"
 why = "put 会阻塞，反射层会被卡住"
 
 [[mutant]]

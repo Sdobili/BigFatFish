@@ -110,7 +110,38 @@ def _load_manifest(path: Path) -> list[Mutant] | str:
             return f"duplicate mutant id: {parsed.id}"
         seen.add(parsed.id)
         mutants.append(parsed)
+    problem = _check_manifest(raw, mutants)
+    if problem is not None:
+        return problem
     return mutants
+
+
+def _check_manifest(raw: dict[str, Any], mutants: list[Mutant]) -> str | None:
+    if not mutants:
+        return "manifest has no mutants"
+    required_ids = _required_id_list(raw.get("required_ids"))
+    if required_ids is None:
+        return "manifest has no required_ids list"
+    known = {mutant.id for mutant in mutants}
+    missing = [mutant_id for mutant_id in required_ids if mutant_id not in known]
+    if missing:
+        return f"required mutant missing: {missing[0]}"
+    required = set(required_ids)
+    for mutant in mutants:
+        if mutant.id not in required:
+            return f"mutant not in required_ids: {mutant.id}"
+    return None
+
+
+def _required_id_list(value: object) -> list[str] | None:
+    if not isinstance(value, list) or len(value) == 0:
+        return None
+    ids: list[str] = []
+    for item in value:
+        if not isinstance(item, str) or item == "":
+            return None
+        ids.append(item)
+    return ids
 
 
 def _parse_mutant(entry: object) -> Mutant | str:
@@ -273,8 +304,8 @@ def _judge(mutant: Mutant, code: int | None, output: str) -> str:
         print(f"WRONG_REASON {mutant.id}")
         _print_tail(output)
         return "wrong"
-    print(f"KILLED {mutant.id}")
-    return "killed"
+    print(f"ERROR {mutant.id}: pytest exited {code}")
+    return "error"
 
 
 def _print_tail(output: str) -> None:
