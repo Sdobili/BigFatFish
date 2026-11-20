@@ -4,6 +4,8 @@ required_ids = [
     "bus-maxsize-bounded",
     "bus-maxsize-check-bound",
     "bus-maxsize-check-raise",
+    "hard-sniff-off",
+    "hard-ok-on-violation",
 ]
 
 [[mutant]]
@@ -50,3 +52,21 @@ replacement = "pass"
 kill = ["tests/test_core.py::test_channel_rejects_non_positive_maxsize"]
 expect = "DID NOT RAISE"
 why = "非法 maxsize 必须抛出 ValueError"
+
+[[mutant]]
+id = "hard-sniff-off"
+file = "scripts/check_assets.py"
+original = "def _sniff(head: bytes) -> str | None:"
+replacement = "def _sniff(head: bytes) -> str | None:\n    return None"
+kill = ["tests/test_check_assets.py::test_check_assets_rejects_png_renamed_to_bin"]
+expect = "assert 'notes/pic.bin: "
+why = "关掉文件头识别后，改名的 PNG 不再被当成素材"
+
+[[mutant]]
+id = "hard-ok-on-violation"
+file = "scripts/check_assets.py"
+original = "_write_utf8(\"\\n\".join(violations))"
+replacement = "_write_utf8(\"\\n\".join(violations) + \"\\nOK\")"
+kill = ["tests/test_check_assets.py::test_check_assets_rejects_unregistered_image"]
+expect = "assert 'OK' not in"
+why = "有违规时也打印 OK，rejects 测试必须拒绝"
