@@ -130,6 +130,13 @@ def _check_manifest(raw: dict[str, Any], mutants: list[Mutant]) -> str | None:
     for mutant in mutants:
         if mutant.id not in required:
             return f"mutant not in required_ids: {mutant.id}"
+    guards = raw.get("guard_tests", [])
+    if not isinstance(guards, list):
+        return "guard_tests is not a list"
+    owned = {mutant.kill[0] for mutant in mutants if len(mutant.kill) == 1}
+    for guard in guards:
+        if guard not in owned:
+            return f"guard test has no own mutant: {guard}"
     return None
 
 

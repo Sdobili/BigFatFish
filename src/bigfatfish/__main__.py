@@ -45,8 +45,6 @@ def _render_one_frame(frame_out: str | None) -> int:
             print(f"failed to write {frame_out}", file=sys.stderr)
             return 1
     reasons: list[str] = []
-    if not window.isVisible():
-        reasons.append("window is not visible")
     if window.pixmap().isNull():
         reasons.append("pixmap is empty")
     if not _has_visible_pixel(window.grab().toImage()):
