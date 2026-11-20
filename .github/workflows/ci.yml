@@ -32,7 +32,7 @@ jobs:
           curl -sSfL --proto-default https -o gitleaks.tar.gz "github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
           echo "${GITLEAKS_SHA256}  gitleaks.tar.gz" | sha256sum -c -
           tar xzf gitleaks.tar.gz gitleaks
-          ./gitleaks git --redact --exit-code 1 .
+          ./gitleaks git --redact --exit-code 1 --log-opts="HEAD" .
       - name: Install uv
         uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
@@ -67,7 +67,7 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
       - name: Mypy
-        run: uv run mypy --strict src/
+        run: uv run mypy --strict src/ scripts/
 
   test:
     name: test (${{ matrix.os }})
