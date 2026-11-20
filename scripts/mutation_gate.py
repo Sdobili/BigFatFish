@@ -273,8 +273,8 @@ def _judge(mutant: Mutant, code: int | None, output: str) -> str:
         print(f"WRONG_REASON {mutant.id}")
         _print_tail(output)
         return "wrong"
-    print(f"ERROR {mutant.id}: pytest exited {code}")
-    return "error"
+    print(f"KILLED {mutant.id}")
+    return "killed"
 
 
 def _print_tail(output: str) -> None:

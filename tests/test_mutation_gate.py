@@ -6,9 +6,11 @@ Each test builds a one-module project under tmp_path and runs
 
 import hashlib
 import json
+import re
 import subprocess
 import sys
 import textwrap
+import tomllib
 from pathlib import Path
 
 _SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "mutation_gate.py"
@@ -85,11 +87,31 @@ def _mutant(
     )
 
 
+def _with_required_ids(manifest: str) -> str:
+    if re.search(r"(?m)^required_ids\s*=", manifest):
+        return manifest
+    try:
+        parsed = tomllib.loads(manifest)
+    except tomllib.TOMLDecodeError:
+        return manifest
+    entries = parsed.get("mutant")
+    ids: list[str] = []
+    if isinstance(entries, list):
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            mutant_id = entry.get("id")
+            if isinstance(mutant_id, str):
+                ids.append(mutant_id)
+    rendered = ", ".join(json.dumps(mutant_id) for mutant_id in ids)
+    return f"required_ids = [{rendered}]\n\n{manifest}"
+
+
 def _project(tmp_path: Path, source: str, test: str, manifest: str) -> Path:
     source_path = tmp_path / "sample.py"
     _write(source_path, source)
     _write(tmp_path / "tests" / "test_sample.py", test)
-    _write(tmp_path / "tests" / "mutations.toml", manifest)
+    _write(tmp_path / "tests" / "mutations.toml", _with_required_ids(manifest))
     return source_path
 
 
@@ -367,3 +389,56 @@ def test_same_length_mutant_not_masked_by_pyc(tmp_path: Path) -> None:
     assert _summary(result.stdout) == (
         "mutation gate: 1 killed, 0 survived, 0 wrong reason, 0 errors"
     )
+
+
+def test_mutant_breaking_import_is_error(tmp_path: Path) -> None:
+    source = _project(
+        tmp_path,
+        _VALUE_SOURCE,
+        _VALUE_PASSES,
+        _mutant(
+            mutant_id="breaks-import",
+            original="return 1",
+            replacement="return (",
+            kill="tests/test_sample.py::test_value",
+            expect="syntax",
+        ),
+    )
+    before = source.read_bytes()
+    result = _run(tmp_path)
+    assert "ERROR breaks-import" in result.stdout
+    assert result.returncode == 2
+    assert "KILLED" not in result.stdout
+    assert source.read_bytes() == before
+
+
+def test_empty_manifest_exits_2(tmp_path: Path) -> None:
+    _project(
+        tmp_path,
+        _VALUE_SOURCE,
+        _VALUE_PASSES,
+        "required_ids = []\nmutant = []\n",
+    )
+    result = _run(tmp_path)
+    assert result.returncode == 2
+    assert "manifest has no mutants" in result.stdout
+
+
+def test_missing_required_id_exits_2(tmp_path: Path) -> None:
+    _project(
+        tmp_path,
+        _VALUE_SOURCE,
+        _VALUE_PASSES,
+        'required_ids = ["dies", "gone"]\n\n'
+        + _mutant(
+            mutant_id="dies",
+            original="return 1",
+            replacement="return 2",
+            kill="tests/test_sample.py::test_value",
+            expect="assert 2 == 1",
+        ),
+    )
+    result = _run(tmp_path)
+    assert result.returncode == 2
+    assert "required mutant missing: gone" in result.stdout
+    assert "KILLED" not in result.stdout
