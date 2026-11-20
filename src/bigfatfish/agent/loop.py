@@ -38,6 +38,13 @@ LoopEvent = GestureEvent | Tick | Observation | ProposalReady
 Box = tuple[tuple[float, float], tuple[float, float]]
 
 
+class ConfirmationToken:
+    """Issued when a confirmation gesture completes."""
+
+    def __init__(self) -> None:
+        return
+
+
 @dataclass(frozen=True, slots=True)
 class Capture:
     capture_id: str
@@ -56,6 +63,7 @@ class Deliver:
     text: str
     proposal: str
     revisions: int
+    token: ConfirmationToken
 
 
 Effect = Capture | Discard | Deliver
@@ -200,6 +208,7 @@ def _on_thumb_up(state: LoopState) -> tuple[LoopState, list[Effect]]:
             text=state.text,
             proposal=state.proposal,
             revisions=state.revisions,
+            token=ConfirmationToken(),
         )
     ]
 
