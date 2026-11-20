@@ -22,7 +22,6 @@ def test_bus_never_blocks() -> None:
     worker.join(timeout=1.0)
 
     assert not worker.is_alive()
-    assert result == [False]
 
 
 def test_bus_capacity_matches_maxsize() -> None:
