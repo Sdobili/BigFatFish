@@ -19,5 +19,10 @@ class HoldState:
 
 
 def update_hold(state: HoldState, ev: GestureEvent) -> tuple[HoldState, str | None]:
-    effective_kind(ev)
-    return HoldState(), None
+    kind = effective_kind(ev)
+    if kind not in _HOLD_S:
+        return HoldState(), None
+    since = ev.t if state.kind != kind or state.since is None else state.since
+    held = ev.t - since
+    confirmed = kind if held >= _HOLD_S[kind] else None
+    return HoldState(kind=kind, since=since), confirmed

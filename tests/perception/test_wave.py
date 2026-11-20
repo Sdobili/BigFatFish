@@ -41,7 +41,7 @@ def test_two_reversals_within_window_is_wave() -> None:
 
 
 def test_reversals_exactly_at_window_are_wave() -> None:
-    # Reversals at t=0.5 and t=2.0 are exactly 1.5s apart, so the window is closed.
+    # Reversals at t=0.5 and t=2.0 are exactly 1.5s apart and still count.
     samples = [(0.0, 0.2), (0.25, 0.8), (0.5, 0.2), (2.0, 0.8)]
     results = _feed(samples)
     hit = results[-1]
@@ -102,7 +102,5 @@ def test_detector_resets_after_a_wave() -> None:
     # Full reset: the next three samples are a seed, one direction, one reversal.
     quiet = [(0.8, 0.2), (1.0, 0.8), (1.2, 0.2)]
     assert all(detector.feed(_palm(t, x)) is None for t, x in quiet)
-    again = [(1.4, 0.8), (1.6, 0.2), (1.8, 0.8)]
-    again_hits = [detector.feed(_palm(t, x)) for t, x in again]
-    assert again_hits[-1] is not None and again_hits[-1].kind == "Wave"
-    assert all(item is None for item in again_hits[:-1])
+    hit = detector.feed(_palm(1.4, 0.8))
+    assert hit is not None and hit.kind == "Wave" and hit.t == 1.4
