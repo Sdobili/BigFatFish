@@ -84,6 +84,8 @@ required_ids = [
     "gate-hypothesis-env-off",
     "r1-hold-eps-off",
     "r1-capture-every-event",
+    "r1-qwen-auth",
+    "r1-qwen-length-ok",
 ]
 
 guard_tests = [
@@ -895,3 +897,21 @@ replacement = "return state.phase == \"ATTENDING\" or (state.phase == \"IDLE\" a
 kill = ["tests/agent/test_loop.py::test_capture_once_per_wake"]
 expect = "capture must happen once per wake"
 why = "ATTENDING 状态下每个事件都发 Capture"
+
+[[mutant]]
+id = "r1-qwen-auth"
+file = "src/bigfatfish/agent/llm.py"
+original = "f\"Bearer {api_key}\""
+replacement = "api_key"
+kill = ["tests/agent/test_llm.py::test_build_request_matches_doc"]
+expect = "Authorization must be Bearer"
+why = "Authorization 头不再带 Bearer"
+
+[[mutant]]
+id = "r1-qwen-length-ok"
+file = "src/bigfatfish/agent/llm.py"
+original = "if choice[\"finish_reason\"] == \"length\":"
+replacement = "if False:"
+kill = ["tests/agent/test_llm.py::test_length_is_failure"]
+expect = "truncated reply must fail"
+why = "finish_reason 为 length 时仍交出半截回复"
