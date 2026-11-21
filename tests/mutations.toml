@@ -83,6 +83,7 @@ required_ids = [
     "r1-hypothesis-full-shrunk",
     "gate-hypothesis-env-off",
     "r1-hold-eps-off",
+    "r1-capture-every-event",
 ]
 
 guard_tests = [
@@ -885,3 +886,12 @@ replacement = "_HOLD_EPS = 0.0"
 kill = ["tests/agent/test_hold.py::test_hold_inexact_decimal_interval_fires"]
 expect = "inexact decimal hold at threshold must fire"
 why = "去掉保持容差后，十进制正好等于阈值的间隔不触发"
+
+[[mutant]]
+id = "r1-capture-every-event"
+file = "src/bigfatfish/agent/loop.py"
+original = "return state.phase == \"IDLE\" and wave"
+replacement = "return state.phase == \"ATTENDING\" or (state.phase == \"IDLE\" and wave)"
+kill = ["tests/agent/test_loop.py::test_capture_once_per_wake"]
+expect = "capture must happen once per wake"
+why = "ATTENDING 状态下每个事件都发 Capture"

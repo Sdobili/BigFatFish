@@ -125,6 +125,9 @@ def step(state: LoopState, ev: LoopEvent) -> tuple[LoopState, list[Effect]]:
     now = ev.t
     if _idle_expired(state, ev, now):
         return LoopState(), []
+    started = _start_attention(state, ev, now)
+    if started is not None:
+        return started
     if isinstance(ev, Observation):
         return replace(state, window_title=ev.window_title, text=ev.text), []
     if isinstance(ev, ProposalReady):
@@ -151,16 +154,6 @@ def _on_gesture(
 ) -> tuple[LoopState, list[Effect]]:
     state = replace(state, last_gesture_t=now)
     kind = effective_kind(ev)
-    if kind == "Wave" and state.phase == "IDLE":
-        capture_id = f"cap-{now}"
-        woke = replace(
-            state,
-            phase="ATTENDING",
-            capture_id=capture_id,
-            hold_kind=None,
-            hold_since=None,
-        )
-        return woke, [Capture(capture_id)]
     if kind == "Thumb_Down":
         return _on_thumb_down(state)
     if _waiting_to_move(state, ev, kind):
@@ -272,11 +265,41 @@ class _Reader(Protocol):
         ...
 
 
+def _start_attention(
+    state: LoopState,
+    ev: LoopEvent,
+    now: float,
+) -> tuple[LoopState, list[Effect]] | None:
+    if not _wakes(state, ev):
+        return None
+    capture_id = f"cap-{now}"
+    woke = replace(
+        state,
+        phase="ATTENDING",
+        capture_id=capture_id,
+        hold_kind=None,
+        hold_since=None,
+        last_gesture_t=now,
+    )
+    return woke, [Capture(capture_id)]
+
+
+def _wakes(state: LoopState, ev: LoopEvent) -> bool:
+    wave = isinstance(ev, GestureEvent) and effective_kind(ev) == "Wave"
+    return state.phase == "IDLE" and wave
+
+
 def run_wake(
     capturer: _Capturer,
     ocr: _Reader,
     events: Sequence[LoopEvent],
 ) -> tuple[LoopState, list[Effect]]:
-    # Red stub: the wake does not capture or read yet.
-    del capturer, ocr, events
-    return initial(), []
+    state = initial()
+    effects: list[Effect] = []
+    for event in events:
+        state, out = step(state, event)
+        for effect in out:
+            if isinstance(effect, Capture):
+                ocr.read(capturer.capture())
+            effects.append(effect)
+    return state, effects

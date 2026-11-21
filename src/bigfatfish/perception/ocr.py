@@ -27,8 +27,18 @@ class FakeOcr:
 
 
 class RapidOcr:
-    """RapidOCR reader. Not installed in CI."""
+    """RapidOCR reader. The package is optional and is not installed in CI."""
 
     def read(self, image: bytes) -> str:
-        del image
-        raise OcrError("rapidocr is not installed")
+        if not image:
+            raise OcrError("empty image is not text")
+        try:
+            from rapidocr import RapidOCR  # type: ignore[import-not-found]
+        except ImportError as exc:
+            raise OcrError("rapidocr is not installed") from exc
+        result = RapidOCR()(image)
+        texts = getattr(result, "txts", None)
+        if not texts:
+            return ""
+        lines = [str(item) for item in texts if str(item).strip()]
+        return "\n".join(lines)
