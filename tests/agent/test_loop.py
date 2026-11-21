@@ -1,7 +1,9 @@
 """Revise limit, cancel, and idle timeout on the closed loop."""
 
-from bigfatfish.agent.loop import Capture, Discard, initial, step
-from bigfatfish.core.events import GestureEvent, ProposalReady, Tick
+from bigfatfish.agent.loop import Capture, Discard, initial, run_wake, step
+from bigfatfish.core.events import GestureEvent, Observation, ProposalReady, Tick
+from bigfatfish.perception.capture import FakeCapturer
+from bigfatfish.perception.ocr import FakeOcr
 
 
 def test_third_revise_is_ignored() -> None:
@@ -55,6 +57,30 @@ def test_idle_timeout_after_20s() -> None:
     assert stayed_effects == []
     left, _ = step(stayed, Tick(t=20.0))
     assert left.phase == "IDLE", "must return to IDLE at 20s"
+
+
+def test_capture_once_per_wake() -> None:
+    capturer = FakeCapturer()
+    ocr = FakeOcr("noted")
+    events = (
+        GestureEvent(t=0.0, kind="Wave", hand="right"),
+        Tick(t=1.0),
+        GestureEvent(t=2.0, kind="Open_Palm", hand="right"),
+        Observation(t=3.0, window_title="Notes", text="hello"),
+        GestureEvent(t=4.0, kind="Closed_Fist", hand="right"),
+        GestureEvent(t=5.0, kind="Closed_Fist", hand="right"),
+    )
+    state, effects = run_wake(capturer, ocr, events)
+    captures = [effect for effect in effects if isinstance(effect, Capture)]
+    discards = [effect for effect in effects if isinstance(effect, Discard)]
+    assert len(captures) == 1, "capture must happen once per wake"
+    assert capturer.calls == 1, "capture must happen once per wake"
+    assert ocr.calls == 1, "capture must happen once per wake"
+    assert state.phase == "IDLE"
+    assert len(discards) == 1
+    assert discards[0].capture_id == captures[0].capture_id, (
+        "capture must happen once per wake"
+    )
 
 
 def _points(

@@ -1,8 +1,9 @@
 """Closed-loop phases and hold timing. Durations use event timestamps."""
 
 import sys
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
-from typing import NoReturn, SupportsIndex
+from typing import NoReturn, Protocol, SupportsIndex
 
 from bigfatfish.core.events import GestureEvent, Observation, ProposalReady, Tick
 from bigfatfish.core.gestures import effective_kind
@@ -257,3 +258,25 @@ def _xy(ev: GestureEvent) -> tuple[float, float] | None:
     if len(point) < 2:
         return None
     return (point[0], point[1])
+
+
+class _Capturer(Protocol):
+    def capture(self) -> bytes:
+        """Return the active-window image."""
+        ...
+
+
+class _Reader(Protocol):
+    def read(self, image: bytes) -> str:
+        """Read text from one captured image."""
+        ...
+
+
+def run_wake(
+    capturer: _Capturer,
+    ocr: _Reader,
+    events: Sequence[LoopEvent],
+) -> tuple[LoopState, list[Effect]]:
+    # Red stub: the wake does not capture or read yet.
+    del capturer, ocr, events
+    return initial(), []
