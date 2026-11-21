@@ -2,6 +2,7 @@
 
 import sys
 from dataclasses import dataclass, replace
+from typing import NoReturn, SupportsIndex
 
 from bigfatfish.core.events import GestureEvent, Observation, ProposalReady, Tick
 from bigfatfish.core.gestures import effective_kind
@@ -40,11 +41,31 @@ Box = tuple[tuple[float, float], tuple[float, float]]
 
 
 class ConfirmationToken:
-    """Issued when a confirmation gesture completes."""
+    """Issued when a confirmation gesture completes. Bound to that capture."""
 
-    def __init__(self) -> None:
-        if sys._getframe(1).f_globals.get("__name__") != __name__:
+    def __init__(self, capture_id: str) -> None:
+        caller = sys._getframe(1).f_globals.get("__name__")
+        if caller != __name__:
             raise TypeError("ConfirmationToken is sealed")
+        self._capture_id = capture_id
+        self._minted = True
+
+    @property
+    def capture_id(self) -> str:
+        return self._capture_id
+
+    def __copy__(self) -> NoReturn:
+        _reject_token_replica()
+
+    def __deepcopy__(self, _memo: object) -> NoReturn:
+        _reject_token_replica()
+
+    def __reduce_ex__(self, protocol: SupportsIndex) -> NoReturn:
+        _reject_token_replica()
+
+
+def _reject_token_replica() -> NoReturn:
+    raise TypeError("ConfirmationToken cannot be copied")
 
 
 @dataclass(frozen=True, slots=True)
@@ -210,7 +231,7 @@ def _on_thumb_up(state: LoopState) -> tuple[LoopState, list[Effect]]:
             text=state.text,
             proposal=state.proposal,
             revisions=state.revisions,
-            token=ConfirmationToken(),
+            token=ConfirmationToken(state.capture_id),
         )
     ]
 

@@ -1,5 +1,7 @@
 """A card is written only after the loop issues a confirmation token."""
 
+import copy
+import pickle
 import sqlite3
 import tempfile
 from pathlib import Path
@@ -35,8 +37,57 @@ _View = tuple[_Snapshot, tuple[str, ...]]
 
 
 def test_token_cannot_be_constructed() -> None:
+    with pytest.raises(TypeError, match="sealed"):
+        ConfirmationToken("cap-x")
+
+
+def test_token_cannot_be_copied() -> None:
+    token = _delivered(0.0).token
     with pytest.raises(TypeError):
-        ConfirmationToken()
+        copy.copy(token)
+    with pytest.raises(TypeError):
+        copy.deepcopy(token)
+    with pytest.raises(TypeError):
+        pickle.dumps(token)
+
+
+def test_forged_token_rejected() -> None:
+    delivered = _delivered(0.0)
+    forged = object.__new__(ConfirmationToken)
+    draft = _draft(delivered, 0)
+    with tempfile.TemporaryDirectory() as raw:
+        db = Path(raw) / "cards.sqlite"
+        store = CardStore(db, FakeClock(start_wall=1_700_000_000.0))
+        _assert_add_rejected(store, db, draft, forged, "forged token accepted")
+
+
+def test_token_bound_to_capture() -> None:
+    first = _delivered(0.0)
+    second = _delivered(10.0)
+    assert first.capture_id != second.capture_id
+    draft = _draft(second, 0)
+    with tempfile.TemporaryDirectory() as raw:
+        db = Path(raw) / "cards.sqlite"
+        store = CardStore(db, FakeClock(start_wall=1_700_000_000.0))
+        _assert_add_rejected(
+            store,
+            db,
+            draft,
+            first.token,
+            "token for another capture accepted",
+        )
+
+
+def test_token_single_use() -> None:
+    delivered = _delivered(0.0)
+    draft = _draft(delivered, 0)
+    with tempfile.TemporaryDirectory() as raw:
+        db = Path(raw) / "cards.sqlite"
+        clock = FakeClock(start_wall=1_700_000_000.0)
+        store = CardStore(db, clock)
+        store.add(draft, delivered.token)
+        store.undo_last(clock.wall())
+        _assert_add_rejected(store, db, draft, delivered.token, "token reused")
 
 
 def _sequences() -> st.SearchStrategy[list[LoopEvent]]:
@@ -69,6 +120,34 @@ def _sequences() -> st.SearchStrategy[list[LoopEvent]]:
             lambda parts: list(parts[0]) + list(parts[1])
         ),
     )
+
+
+def _delivered(t0: float) -> Deliver:
+    state = initial()
+    found: Deliver | None = None
+    for event in _delivery_events(t0):
+        state, effects = step(state, event)
+        for effect in effects:
+            if isinstance(effect, Deliver):
+                found = effect
+    assert found is not None
+    return found
+
+
+def _assert_add_rejected(
+    store: CardStore,
+    db: Path,
+    draft: CardDraft,
+    token: object,
+    message: str,
+) -> None:
+    before = _view(store, db)
+    rejected = False
+    try:
+        store.add(draft, token)
+    except TypeError:
+        rejected = True
+    assert rejected and _view(store, db) == before, message
 
 
 def _delivery_events(t0: float) -> list[LoopEvent]:
@@ -122,7 +201,7 @@ def test_no_write_without_confirmation(events: list[LoopEvent]) -> None:
 
 def _draft(effect: Deliver, index: int) -> CardDraft:
     return CardDraft(
-        capture_id=f"cap-{index}",
+        capture_id=effect.capture_id,
         window_title=effect.window_title,
         text=effect.text,
         proposal=effect.proposal,

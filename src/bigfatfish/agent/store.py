@@ -36,6 +36,7 @@ class CardStore:
     def __init__(self, path: Path, clock: Clock) -> None:
         self._path = path
         self._clock = clock
+        self._spent = set[int]()
         self.cache_dir = path.parent / "cache"
         self._log_path = path.with_name(path.name + ".log")
         connection = self._connect()
@@ -60,7 +61,17 @@ class CardStore:
     def add(self, draft: CardDraft, token: object) -> None:
         if not isinstance(token, ConfirmationToken):
             raise TypeError("confirmation required")
+        self._consume_token(draft, token)
         _AddCard(draft, self._clock.wall()).do(self)
+
+    def _consume_token(self, draft: CardDraft, token: object) -> None:
+        if token is not None and getattr(token, "_minted", None) is not True:
+            raise TypeError("forged confirmation token")
+        if getattr(token, "_capture_id", draft.capture_id) != draft.capture_id:
+            raise TypeError("confirmation token capture mismatch")
+        if id(token) in self._spent:
+            raise TypeError("confirmation token already used")
+        self._spent.add(id(token))
 
     def undo_last(self, now_wall: float) -> None:
         card = self._latest()
