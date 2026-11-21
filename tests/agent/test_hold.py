@@ -46,6 +46,29 @@ def test_hold_exactly_at_threshold_fires() -> None:
         assert confirmed == [kind], "hold at threshold must fire"
 
 
+def test_hold_inexact_decimal_interval_fires() -> None:
+    intervals = (
+        ("Pointing_Up", 2.0, 2.8, 2.799),
+        ("Thumb_Up", 0.063, 0.563, 0.562),
+        ("Closed_Fist", 0.001, 1.001, 1.000),
+    )
+    for kind, start, on_threshold, under in intervals:
+        confirmed = _confirmed(
+            [
+                _gesture(start, kind, score=0.5),
+                _gesture(on_threshold, kind, score=0.5),
+            ]
+        )
+        assert confirmed == [kind], "inexact decimal hold at threshold must fire"
+        short = _confirmed(
+            [
+                _gesture(start, kind, score=0.5),
+                _gesture(under, kind, score=0.5),
+            ]
+        )
+        assert short == []
+
+
 def test_hold_past_threshold_fires() -> None:
     for kind, hold_s in _HOLD_S.items():
         confirmed = _confirmed(
