@@ -77,6 +77,7 @@ required_ids = [
     "r1-token-forgeable",
     "r1-token-unbound",
     "r1-token-reusable",
+    "r1-sync-agent",
     "gate-baseline-guard-ignored",
     "gate-baseline-guard-unbounded",
     "r1-hypothesis-full-shrunk",
@@ -865,3 +866,12 @@ replacement = "pass"
 kill = ["tests/agent/test_confirmation.py::test_token_single_use"]
 expect = "token reused"
 why = "add does not record a spent token, so the same token can deliver again"
+
+[[mutant]]
+id = "r1-sync-agent"
+file = "src/bigfatfish/agent/worker.py"
+original = "return self._inbox.put_nowait(ev)"
+replacement = "self._process(ev)\n        return True"
+kill = ["tests/agent/test_worker.py::test_hanging_llm_does_not_block_reflex"]
+expect = "proposer called on caller thread"
+why = "submit processes the event on the caller thread, so a hanging proposer blocks reflex"
