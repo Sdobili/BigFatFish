@@ -82,6 +82,7 @@ required_ids = [
     "gate-baseline-guard-unbounded",
     "r1-hypothesis-full-shrunk",
     "gate-hypothesis-env-off",
+    "r1-hold-eps-off",
 ]
 
 guard_tests = [
@@ -681,8 +682,8 @@ why = "挥手窗口被放得无限大"
 [[mutant]]
 id = "r1-hold-boundary"
 file = "src/bigfatfish/agent/loop.py"
-original = "held >= _HOLD_S[kind]"
-replacement = "held > _HOLD_S[kind]"
+original = "return held >= threshold"
+replacement = "return held > threshold"
 kill = ["tests/agent/test_hold.py::test_hold_exactly_at_threshold_fires"]
 expect = "hold at threshold must fire"
 why = "保持时长正好等于阈值时不触发"
@@ -875,3 +876,12 @@ replacement = "self._process(ev)\n        return True"
 kill = ["tests/agent/test_worker.py::test_hanging_llm_does_not_block_reflex"]
 expect = "proposer called on caller thread"
 why = "submit processes the event on the caller thread, so a hanging proposer blocks reflex"
+
+[[mutant]]
+id = "r1-hold-eps-off"
+file = "src/bigfatfish/agent/loop.py"
+original = "_HOLD_EPS = 1e-6"
+replacement = "_HOLD_EPS = 0.0"
+kill = ["tests/agent/test_hold.py::test_hold_inexact_decimal_interval_fires"]
+expect = "inexact decimal hold at threshold must fire"
+why = "去掉保持容差后，十进制正好等于阈值的间隔不触发"

@@ -12,6 +12,7 @@ _HOLD_S: dict[str, float] = {
     "Thumb_Up": 0.5,
     "Closed_Fist": 1.0,
 }
+_HOLD_EPS = 1e-6
 _IDLE_TIMEOUT_S = 20.0
 _MAX_REVISIONS = 2
 _ON_CONFIRM: dict[tuple[str, str], str] = {
@@ -26,13 +27,20 @@ class HoldState:
     since: float | None = None
 
 
+def _held_long_enough(held: float, threshold: float) -> bool:
+    # Shortfalls within _HOLD_EPS count. Exact equality stays on >=.
+    if held < threshold:
+        return held + _HOLD_EPS >= threshold
+    return held >= threshold
+
+
 def update_hold(state: HoldState, ev: GestureEvent) -> tuple[HoldState, str | None]:
     kind = effective_kind(ev)
     if kind not in _HOLD_S:
         return HoldState(), None
     since = ev.t if state.kind != kind or state.since is None else state.since
     held = ev.t - since
-    confirmed = kind if held >= _HOLD_S[kind] else None
+    confirmed = kind if _held_long_enough(held, _HOLD_S[kind]) else None
     return HoldState(kind=kind, since=since), confirmed
 
 
@@ -132,7 +140,7 @@ def _idle_expired(state: LoopState, ev: LoopEvent, now: float) -> bool:
         return False
     if state.last_gesture_t is None:
         return False
-    return now - state.last_gesture_t >= _IDLE_TIMEOUT_S
+    return _held_long_enough(now - state.last_gesture_t, _IDLE_TIMEOUT_S)
 
 
 def _on_gesture(
